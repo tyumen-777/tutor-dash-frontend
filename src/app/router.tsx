@@ -3,7 +3,9 @@ import { APP_ROUTES } from "../shared/routes.ts";
 import { Home } from "@/pages/home";
 import App from "./app.tsx";
 import { Login } from "@/pages/login";
-
+import { StudentAdd } from "@/pages/student-add";
+import { Students } from "@/pages/students";
+import { Incomes } from "@/pages/incomes";
 export const router = createBrowserRouter([
   {
     element: <App />,
@@ -11,6 +13,18 @@ export const router = createBrowserRouter([
       {
         path: APP_ROUTES.HOME,
         element: <Home />,
+      },
+      {
+        path: APP_ROUTES.STUDENTS,
+        element: <Students />,
+      },
+      {
+        path: APP_ROUTES.ADD_STUDENT,
+        element: <StudentAdd />,
+      },
+      {
+        path: APP_ROUTES.INCOMES,
+        element: <Incomes />,
       },
     ],
   },

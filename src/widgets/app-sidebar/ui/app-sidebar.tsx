@@ -2,42 +2,52 @@ import {
   Sidebar,
   SidebarContent,
   SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
+  SidebarRail,
 } from "@/shared/ui/kit/sidebar";
-import { Home } from "lucide-react";
-import { Link } from "react-router-dom";
+import { UserPlus, Users, BanknoteArrowDown, Banknote } from "lucide-react";
 import { APP_ROUTES } from "@/shared/routes.ts";
+import NavGroup from "@/widgets/app-sidebar/ui/nav-group.tsx";
+import { INavGroup } from "@/widgets/app-sidebar";
 
-const items = [
+const navGroups: INavGroup[] = [
   {
-    title: "Главная",
-    icon: Home,
-    url: APP_ROUTES.HOME,
+    title: "Обучение",
+    icon: Users,
+    items: [
+      {
+        title: "Создать студента",
+        icon: UserPlus,
+        url: APP_ROUTES.ADD_STUDENT,
+      },
+      {
+        title: "Студенты",
+        icon: Users,
+        url: APP_ROUTES.STUDENTS,
+      },
+    ],
   },
   {
-    title: "Login",
-    icon: Home,
-    url: APP_ROUTES.LOGIN,
+    title: "Финансы",
+    icon: Banknote,
+    items: [
+      {
+        title: "Поступления",
+        icon: BanknoteArrowDown,
+        url: APP_ROUTES.INCOMES,
+      },
+    ],
   },
 ];
+
 export const AppSidebar = () => {
   return (
     <Sidebar className="top-[48px]" collapsible="icon">
       <SidebarContent>
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild>
-                <Link to={item.url}>
-                  <item.icon />
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          <NavGroup items={navGroups} />
         </SidebarMenu>
       </SidebarContent>
+      <SidebarRail />
     </Sidebar>
   );
 };

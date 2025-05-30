@@ -10,14 +10,18 @@ function App() {
   return isLoggedIn ? (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <div>
+      <div className="flex">
         <SidebarProvider>
           <AppSidebar />
           <main>
-            <SidebarTrigger />
+            <div className="border-2 rounded-sm my-2 mx-2">
+              <SidebarTrigger />
+            </div>
           </main>
+          <div className="ml-auto w-full max-w-full flex h-svh flex-col pt-2 pl-2 pr-2">
+            <Outlet />
+          </div>
         </SidebarProvider>
-        <Outlet />
       </div>
     </div>
   ) : (
