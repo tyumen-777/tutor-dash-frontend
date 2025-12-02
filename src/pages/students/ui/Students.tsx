@@ -18,6 +18,7 @@ import {
 } from "@/shared/ui/kit/table.tsx";
 import { Button } from "@/shared/ui/kit/button.tsx";
 import { CirclePlus } from "lucide-react";
+import ManageStudent from "@/features/manage-student/ui/ManageStudent";
 
 type TStudent = {
   id: number;
@@ -72,6 +73,7 @@ const columns = [
 export const Students = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [data, _setData] = useState(() => [...fakeData]);
+  const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const table = useReactTable({
     data,
     columns,
@@ -79,6 +81,7 @@ export const Students = () => {
     getFilteredRowModel: getFilteredRowModel(),
   });
   return (
+    <>
     <div>
       <div className="py-2">
         <h2>Студенты</h2>
@@ -93,7 +96,7 @@ export const Students = () => {
             table.getColumn("surname")?.setFilterValue(event.target.value)
           }
         />
-        <Button>
+        <Button onClick={() => setIsAddStudentOpen(true)}>
           <CirclePlus />
           Добавить
         </Button>
@@ -144,5 +147,7 @@ export const Students = () => {
         </Table>
       </div>
     </div>
+    <ManageStudent open={isAddStudentOpen} onClose={() => setIsAddStudentOpen(false)} />
+    </>
   );
 };
