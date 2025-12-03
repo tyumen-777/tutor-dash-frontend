@@ -6,6 +6,7 @@ import {
   getCoreRowModel,
   flexRender,
   getFilteredRowModel,
+  ColumnDef,
 } from "@tanstack/react-table";
 import { useState } from "react";
 import {
@@ -17,8 +18,14 @@ import {
   TableRow,
 } from "@/shared/ui/kit/table.tsx";
 import { Button } from "@/shared/ui/kit/button.tsx";
-import { CirclePlus } from "lucide-react";
+import { CirclePlus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import ManageStudent from "@/features/manage-student/ui/ManageStudent";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/ui/kit/dropdown-menu";
 
 type TStudent = {
   id: number;
@@ -47,27 +54,74 @@ const fakeData: TStudent[] = [
   },
 ];
 const columnHelper = createColumnHelper<TStudent>();
-const columns = [
-  columnHelper.accessor("name", {
-    cell: (info) => info.getValue(),
+// const columns = [
+//   columnHelper.accessor("name", {
+//     cell: (info) => info.getValue(),
+//     header: "Имя",
+//   }),
+//   columnHelper.accessor("surname", {
+//     cell: (info) => info.getValue(),
+//     header: "Фамилия",
+//   }),
+//   columnHelper.accessor("phone", {
+//     cell: (info) => info.getValue(),
+//     header: "Телефон",
+//   }),
+//   columnHelper.accessor("email", {
+//     cell: (info) => info.getValue(),
+//     header: "Почта",
+//   }),
+//   columnHelper.accessor("age", {
+//     cell: (info) => info.getValue(),
+//     header: "Возраст",
+//   }),
+// ];
+
+const columns: ColumnDef<TStudent>[] = [
+  {
+    accessorKey: "name",
     header: "Имя",
-  }),
-  columnHelper.accessor("surname", {
     cell: (info) => info.getValue(),
+  },
+  {
+    accessorKey: "surname",
     header: "Фамилия",
-  }),
-  columnHelper.accessor("phone", {
     cell: (info) => info.getValue(),
-    header: "Телефон",
-  }),
-  columnHelper.accessor("email", {
-    cell: (info) => info.getValue(),
+  },
+  {
+    accessorKey: "email",
     header: "Почта",
-  }),
-  columnHelper.accessor("age", {
     cell: (info) => info.getValue(),
+  },
+  {
+    accessorKey: "age",
     header: "Возраст",
-  }),
+    cell: (info) => info.getValue(),
+  },
+  {
+    id: "actions",
+    cell: () => {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <MoreHorizontal />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem className="justify-between">
+              Редактировать
+              <Pencil />
+            </DropdownMenuItem>
+            <DropdownMenuItem className="justify-between">
+              <span className="text-red-500">Удалить</span>
+              <Trash2 color="#fb2c36"/>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
+  },
 ];
 
 export const Students = () => {
@@ -82,72 +136,77 @@ export const Students = () => {
   });
   return (
     <>
-    <div>
-      <div className="py-2">
-        <h2>Студенты</h2>
-      </div>
-      <Separator className="my-4" />
-      <div className="py-4 flex items-center justify-between">
-        <Input
-          placeholder="Поиск студента"
-          className="w-auto"
-          value={(table.getColumn("surname")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("surname")?.setFilterValue(event.target.value)
-          }
-        />
-        <Button onClick={() => setIsAddStudentOpen(true)}>
-          <CirclePlus />
-          Добавить
-        </Button>
-      </div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
+      <div>
+        <div className="py-2">
+          <h2>Студенты</h2>
+        </div>
+        <Separator className="my-4" />
+        <div className="py-4 flex items-center justify-between">
+          <Input
+            placeholder="Поиск студента"
+            className="w-auto"
+            value={
+              (table.getColumn("surname")?.getFilterValue() as string) ?? ""
+            }
+            onChange={(event) =>
+              table.getColumn("surname")?.setFilterValue(event.target.value)
+            }
+          />
+          <Button onClick={() => setIsAddStudentOpen(true)}>
+            <CirclePlus />
+            Добавить
+          </Button>
+        </div>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No data
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No data
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
-    </div>
-    <ManageStudent open={isAddStudentOpen} onClose={() => setIsAddStudentOpen(false)} />
+      <ManageStudent
+        open={isAddStudentOpen}
+        onClose={() => setIsAddStudentOpen(false)}
+      />
     </>
   );
 };

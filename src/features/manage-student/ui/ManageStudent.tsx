@@ -17,6 +17,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/shared/ui/kit/input";
 import { Button } from "@/shared/ui/kit/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/kit/select";
 
 type TManageStudentProps = {
   open: boolean;
@@ -33,10 +34,11 @@ const formSchema = z.object({
     .string()
     .min(2, { message: "Фамилия должна содержать минимум 2 символа" })
     .regex(nameRegex, { message: "Фамилия должна содержать только буквы" }),
-    
+
   phone: z.string().min(1, { message: "Телефон должен быть заполнен" }),
   email: z.email({ message: "Email должен быть заполнен" }),
   age: z.number().min(1, { message: "Возраст должен быть заполнен" }),
+  teacherId: z.number(),
 });
 const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
   const form = useForm<z.infer<typeof formSchema>>({
@@ -47,6 +49,7 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
       phone: "",
       email: "",
       age: 0,
+      teacherId: 0
     },
   });
 
@@ -125,7 +128,37 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
                 <FormItem>
                   <FormLabel>Возраст</FormLabel>
                   <FormControl>
-                    <Input placeholder="Введите возраст" {...field} />
+                    <Input
+                      type="number"
+                      placeholder="Введите возраст"
+                      value={field.value ?? ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value === "" ? undefined : Number(value));
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="teacherId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Преподаватель</FormLabel>
+                  <FormControl>
+                    <Select onValueChange={(value) => field.onChange(Number(value))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Выберите преподавателя" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Преподаватель 1</SelectItem>
+                        <SelectItem value="2">Преподаватель 2</SelectItem>
+                        <SelectItem value="3">Преподаватель 3</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
