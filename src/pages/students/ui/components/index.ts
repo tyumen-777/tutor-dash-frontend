@@ -1,0 +1,1 @@
+export { CreateStudent } from "./CreateStudent";

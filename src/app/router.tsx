@@ -6,6 +6,7 @@ import { Login } from "@/pages/login";
 import { StudentAdd } from "@/pages/student-add";
 import { Students } from "@/pages/students";
 import { Incomes } from "@/pages/incomes";
+import { Student } from "@/pages/student";
 export const router = createBrowserRouter([
   {
     element: <App />,
@@ -25,6 +26,10 @@ export const router = createBrowserRouter([
       {
         path: APP_ROUTES.INCOMES,
         element: <Incomes />,
+      },
+      {
+        path: APP_ROUTES.STUDENT,
+        element: <Student />,
       },
     ],
   },
