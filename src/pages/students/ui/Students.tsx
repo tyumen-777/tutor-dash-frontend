@@ -2,10 +2,11 @@ import { Separator } from "@/shared/ui/kit/separator.tsx";
 import { Input } from "@/shared/ui/kit/input.tsx";
 import {
   createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
   useReactTable,
+  getCoreRowModel,
+  flexRender,
+  getFilteredRowModel,
+  ColumnDef,
 } from "@tanstack/react-table";
 import { useState } from "react";
 import {
@@ -17,8 +18,14 @@ import {
   TableRow,
 } from "@/shared/ui/kit/table.tsx";
 import { Button } from "@/shared/ui/kit/button.tsx";
-import { CirclePlus } from "lucide-react";
-import { CreateStudent } from "@/pages/students/ui/components";
+import { CirclePlus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import ManageStudent from "@/features/manage-student/ui/ManageStudent";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/ui/kit/dropdown-menu";
 
 type TStudent = {
   id: number;
@@ -47,43 +54,86 @@ const fakeData: TStudent[] = [
   },
 ];
 const columnHelper = createColumnHelper<TStudent>();
-const columns = [
-  columnHelper.accessor("name", {
-    cell: (info) => info.getValue(),
+// const columns = [
+//   columnHelper.accessor("name", {
+//     cell: (info) => info.getValue(),
+//     header: "Имя",
+//   }),
+//   columnHelper.accessor("surname", {
+//     cell: (info) => info.getValue(),
+//     header: "Фамилия",
+//   }),
+//   columnHelper.accessor("phone", {
+//     cell: (info) => info.getValue(),
+//     header: "Телефон",
+//   }),
+//   columnHelper.accessor("email", {
+//     cell: (info) => info.getValue(),
+//     header: "Почта",
+//   }),
+//   columnHelper.accessor("age", {
+//     cell: (info) => info.getValue(),
+//     header: "Возраст",
+//   }),
+// ];
+
+const columns: ColumnDef<TStudent>[] = [
+  {
+    accessorKey: "name",
     header: "Имя",
-  }),
-  columnHelper.accessor("surname", {
     cell: (info) => info.getValue(),
+  },
+  {
+    accessorKey: "surname",
     header: "Фамилия",
-  }),
-  columnHelper.accessor("phone", {
     cell: (info) => info.getValue(),
-    header: "Телефон",
-  }),
-  columnHelper.accessor("email", {
-    cell: (info) => info.getValue(),
+  },
+  {
+    accessorKey: "email",
     header: "Почта",
-  }),
-  columnHelper.accessor("age", {
     cell: (info) => info.getValue(),
+  },
+  {
+    accessorKey: "age",
     header: "Возраст",
-  }),
+    cell: (info) => info.getValue(),
+  },
+  {
+    id: "actions",
+    cell: () => {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <MoreHorizontal />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem className="justify-between">
+              Редактировать
+              <Pencil />
+            </DropdownMenuItem>
+            <DropdownMenuItem className="justify-between">
+              <span className="text-red-500">Удалить</span>
+              <Trash2 color="#fb2c36"/>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
+  },
 ];
 
 export const Students = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [data, _setData] = useState(() => [...fakeData]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   });
-
-  const toogleModal = () => {
-    setIsModalOpen(!isModalOpen);
-  };
   return (
     <>
       <div>
@@ -102,7 +152,7 @@ export const Students = () => {
               table.getColumn("surname")?.setFilterValue(event.target.value)
             }
           />
-          <Button onClick={toogleModal}>
+          <Button onClick={() => setIsAddStudentOpen(true)}>
             <CirclePlus />
             Добавить
           </Button>
@@ -153,10 +203,9 @@ export const Students = () => {
           </Table>
         </div>
       </div>
-      <CreateStudent
-        isOpen={isModalOpen}
-        onClose={toogleModal}
-        onSubmit={() => {}}
+      <ManageStudent
+        open={isAddStudentOpen}
+        onClose={() => setIsAddStudentOpen(false)}
       />
     </>
   );
