@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { APP_ROUTES } from "../shared/routes.ts";
+import { APP_ROUTES } from "../shared/model/routes.ts";
 
 const Layout = () => {
   const isLoggedIn = true;

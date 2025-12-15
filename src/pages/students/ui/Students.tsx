@@ -1,12 +1,11 @@
 import { Separator } from "@/shared/ui/kit/separator.tsx";
 import { Input } from "@/shared/ui/kit/input.tsx";
 import {
-  createColumnHelper,
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-  getFilteredRowModel,
   ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  useReactTable,
 } from "@tanstack/react-table";
 import { useState } from "react";
 import {
@@ -19,72 +18,33 @@ import {
 } from "@/shared/ui/kit/table.tsx";
 import { Button } from "@/shared/ui/kit/button.tsx";
 import { CirclePlus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import ManageStudent from "@/features/manage-student/ui/ManageStudent";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/shared/ui/kit/dropdown-menu";
+import { ManageStudent } from "@/features";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/app/api/api";
 
 type TStudent = {
   id: number;
-  name: string;
-  surname: string;
+  firstName: string;
+  lastName: string;
   phone: string;
   age: number;
   email: string;
 };
-const fakeData: TStudent[] = [
-  {
-    name: "Ivan",
-    surname: "Ivanov",
-    phone: "89220000000",
-    age: 0,
-    email: "ivanov@gmail.com",
-    id: 1,
-  },
-  {
-    name: "Sergei",
-    surname: "Sergeev",
-    phone: "89220000000",
-    age: 0,
-    email: "ivanov@gmail.com",
-    id: 2,
-  },
-];
-const columnHelper = createColumnHelper<TStudent>();
-// const columns = [
-//   columnHelper.accessor("name", {
-//     cell: (info) => info.getValue(),
-//     header: "Имя",
-//   }),
-//   columnHelper.accessor("surname", {
-//     cell: (info) => info.getValue(),
-//     header: "Фамилия",
-//   }),
-//   columnHelper.accessor("phone", {
-//     cell: (info) => info.getValue(),
-//     header: "Телефон",
-//   }),
-//   columnHelper.accessor("email", {
-//     cell: (info) => info.getValue(),
-//     header: "Почта",
-//   }),
-//   columnHelper.accessor("age", {
-//     cell: (info) => info.getValue(),
-//     header: "Возраст",
-//   }),
-// ];
 
 const columns: ColumnDef<TStudent>[] = [
   {
-    accessorKey: "name",
+    accessorKey: "firstName",
     header: "Имя",
     cell: (info) => info.getValue(),
   },
   {
-    accessorKey: "surname",
+    accessorKey: "lastName",
     header: "Фамилия",
     cell: (info) => info.getValue(),
   },
@@ -94,13 +54,18 @@ const columns: ColumnDef<TStudent>[] = [
     cell: (info) => info.getValue(),
   },
   {
+    accessorKey: "phone",
+    header: "Телефон",
+    cell: (info) => info.getValue(),
+  },
+  {
     accessorKey: "age",
     header: "Возраст",
     cell: (info) => info.getValue(),
   },
   {
     id: "actions",
-    cell: () => {
+    cell: (info) => {
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -113,9 +78,12 @@ const columns: ColumnDef<TStudent>[] = [
               Редактировать
               <Pencil />
             </DropdownMenuItem>
-            <DropdownMenuItem className="justify-between">
+            <DropdownMenuItem
+              className="justify-between"
+              onClick={() => console.log(info.row.original.id)}
+            >
               <span className="text-red-500">Удалить</span>
-              <Trash2 color="#fb2c36"/>
+              <Trash2 color="#fb2c36" />
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -123,34 +91,50 @@ const columns: ColumnDef<TStudent>[] = [
     },
   },
 ];
+const getStudents = (): Promise<{ data: TStudent[] }> => {
+  return api.get("student");
+};
 
-export const Students = () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [data, _setData] = useState(() => [...fakeData]);
+const Students = () => {
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
+  const [globalFilter, setGlobalFilter] = useState("");
+
+  const { data } = useQuery({
+    queryKey: ["student"],
+    queryFn: getStudents,
+  });
+
   const table = useReactTable({
-    data,
+    data: data?.data ?? [],
     columns,
+    state: {
+      globalFilter,
+    },
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const firstName = row.getValue<string>("firstName")?.toLowerCase() ?? "";
+      const lastName = row.getValue<string>("lastName")?.toLowerCase() ?? "";
+      const search = filterValue.toLowerCase();
+      return firstName.includes(search) || lastName.includes(search);
+    },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   });
+
+  console.log(data);
   return (
     <>
-      <div>
+      <div className="w-full">
         <div className="py-2">
           <h2>Студенты</h2>
         </div>
         <Separator className="my-4" />
         <div className="py-4 flex items-center justify-between">
           <Input
-            placeholder="Поиск студента"
+            placeholder="Поиск..."
             className="w-auto"
-            value={
-              (table.getColumn("surname")?.getFilterValue() as string) ?? ""
-            }
-            onChange={(event) =>
-              table.getColumn("surname")?.setFilterValue(event.target.value)
-            }
+            value={globalFilter}
+            onChange={(event) => setGlobalFilter(event.target.value)}
           />
           <Button onClick={() => setIsAddStudentOpen(true)}>
             <CirclePlus />
@@ -195,7 +179,7 @@ export const Students = () => {
                     colSpan={columns.length}
                     className="h-24 text-center"
                   >
-                    No data
+                    Ничего не найдено
                   </TableCell>
                 </TableRow>
               )}
@@ -210,3 +194,5 @@ export const Students = () => {
     </>
   );
 };
+
+export const Component = Students;

@@ -45,7 +45,7 @@ const NavGroup = ({ items }: TNavGroupProps) => {
                       <SidebarMenuSubButton
                         asChild
                         isActive={isActive(subItem.url as string)}
-                        className="peer data-[active=true]:bg-fuchsia-200"
+                        className="peer data-[active=true]:bg-light-green"
                       >
                         <Link to={subItem.url || ""}>
                           {subItem.icon && <subItem.icon />}

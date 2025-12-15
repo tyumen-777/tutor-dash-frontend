@@ -17,7 +17,13 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/shared/ui/kit/input";
 import { Button } from "@/shared/ui/kit/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/kit/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/ui/kit/select";
 
 type TManageStudentProps = {
   open: boolean;
@@ -39,6 +45,7 @@ const formSchema = z.object({
   email: z.email({ message: "Email должен быть заполнен" }),
   age: z.number().min(1, { message: "Возраст должен быть заполнен" }),
   teacherId: z.number(),
+  gender: z.enum(["male", "female"], { message: "Пол должен быть заполнен" }),
 });
 const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
   const form = useForm<z.infer<typeof formSchema>>({
@@ -49,7 +56,8 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
       phone: "",
       email: "",
       age: 0,
-      teacherId: 0
+      teacherId: 0,
+      gender: undefined,
     },
   });
 
@@ -58,7 +66,13 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog
+      open={open}
+      onOpenChange={() => {
+        form.reset();
+        onClose();
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Добавить студента</DialogTitle>
@@ -115,7 +129,11 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="Введите email" {...field} />
+                    <Input
+                      type="email"
+                      placeholder="Введите email"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -134,7 +152,9 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
                       value={field.value ?? ""}
                       onChange={(e) => {
                         const value = e.target.value;
-                        field.onChange(value === "" ? undefined : Number(value));
+                        field.onChange(
+                          value === "" ? undefined : Number(value),
+                        );
                       }}
                     />
                   </FormControl>
@@ -149,9 +169,12 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
                 <FormItem>
                   <FormLabel>Преподаватель</FormLabel>
                   <FormControl>
-                    <Select onValueChange={(value) => field.onChange(Number(value))}>
+                    <Select
+                      value={field.value ? field.value.toString() : ""}
+                      onValueChange={(value) => field.onChange(Number(value))}
+                    >
                       <SelectTrigger>
-                        <SelectValue placeholder="Выберите преподавателя" />
+                        <SelectValue placeholder="Преподаватель" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="1">Преподаватель 1</SelectItem>
@@ -164,6 +187,31 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="gender"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Пол</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={field.value ?? ""}
+                      onValueChange={(value) => field.onChange(value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Пол" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Мужской</SelectItem>
+                        <SelectItem value="female">Женский</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="flex justify-end gap-2">
               <Button type="reset" variant="outline">
                 Сбросить

@@ -5,7 +5,7 @@ import {
   SidebarRail,
 } from "@/shared/ui/kit/sidebar";
 import { UserPlus, Users, BanknoteArrowDown, Banknote } from "lucide-react";
-import { APP_ROUTES } from "@/shared/routes.ts";
+import { APP_ROUTES } from "@/shared/model/routes";
 import NavGroup from "@/widgets/app-sidebar/ui/nav-group.tsx";
 import { INavGroup } from "@/widgets/app-sidebar";
 
@@ -41,8 +41,12 @@ const navGroups: INavGroup[] = [
 
 export const AppSidebar = () => {
   return (
-    <Sidebar className="top-[48px]" collapsible="icon">
-      <SidebarContent>
+    <Sidebar
+      collapsible="icon"
+      className="sticky h-full rounded-md "
+      variant="sidebar"
+    >
+      <SidebarContent className="rounded-md bg-light-grey shadow-md">
         <SidebarMenu>
           <NavGroup items={navGroups} />
         </SidebarMenu>
