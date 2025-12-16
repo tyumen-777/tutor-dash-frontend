@@ -5,4 +5,6 @@ export const APP_ROUTES = {
   STUDENT: "/people/:id",
   ADD_STUDENT: "/people/add-student",
   INCOMES: "/finance/incomes",
+  TEACHERS: "/teacher",
+  TEACHER: "/teacher/:id",
 } as const;

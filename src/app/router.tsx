@@ -32,6 +32,10 @@ export const router = createBrowserRouter([
         path: APP_ROUTES.STUDENT,
         element: <Student />,
       },
+      {
+        path: APP_ROUTES.TEACHERS,
+        lazy: () => import("@/pages/teachers/ui/Teachers.tsx")
+      },
     ],
   },
   { path: APP_ROUTES.LOGIN, element: <Login /> },

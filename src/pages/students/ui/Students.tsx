@@ -24,10 +24,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/shared/ui/kit/dropdown-menu";
-import { ManageStudent } from "@/features";
+import  ManageStudent  from "./ManageStudent";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/app/api/api";
+import { api } from "@/app/api";
 
+//TODO: вынести типы в entities
 type TStudent = {
   id: number;
   firstName: string;
@@ -121,7 +122,6 @@ const Students = () => {
     getFilteredRowModel: getFilteredRowModel(),
   });
 
-  console.log(data);
   return (
     <>
       <div className="w-full">

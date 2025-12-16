@@ -24,32 +24,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/ui/kit/select";
+import { studentManageSchema } from "../model/manage-schema";
 
 type TManageStudentProps = {
   open: boolean;
   onClose: () => void;
 };
 
-const nameRegex = /^([а-яё]+|[a-z]+)$/i;
-const formSchema = z.object({
-  name: z
-    .string()
-    .min(2, { message: "Имя должно содержать минимум 2 символа" })
-    .regex(nameRegex, { message: "Имя должно содержать только буквы" }),
-  surname: z
-    .string()
-    .min(2, { message: "Фамилия должна содержать минимум 2 символа" })
-    .regex(nameRegex, { message: "Фамилия должна содержать только буквы" }),
 
-  phone: z.string().min(1, { message: "Телефон должен быть заполнен" }),
-  email: z.email({ message: "Email должен быть заполнен" }),
-  age: z.number().min(1, { message: "Возраст должен быть заполнен" }),
-  teacherId: z.number(),
-  gender: z.enum(["male", "female"], { message: "Пол должен быть заполнен" }),
-});
+
 const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof studentManageSchema>>({
+    resolver: zodResolver(studentManageSchema),
     defaultValues: {
       name: "",
       surname: "",
@@ -61,7 +47,7 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
     },
   });
 
-  const handleSubmit = (data: z.infer<typeof formSchema>) => {
+  const handleSubmit = (data: z.infer<typeof studentManageSchema>) => {
     console.log(data);
   };
 

@@ -1,1 +1,1 @@
-export { $api } from "./api.ts";
+export { api } from "./api.ts";

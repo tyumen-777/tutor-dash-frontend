@@ -4,7 +4,7 @@ import {
   SidebarMenu,
   SidebarRail,
 } from "@/shared/ui/kit/sidebar";
-import { UserPlus, Users, BanknoteArrowDown, Banknote } from "lucide-react";
+import { UserPlus, Users, BanknoteArrowDown, Banknote, User } from "lucide-react";
 import { APP_ROUTES } from "@/shared/model/routes";
 import NavGroup from "@/widgets/app-sidebar/ui/nav-group.tsx";
 import { INavGroup } from "@/widgets/app-sidebar";
@@ -34,6 +34,17 @@ const navGroups: INavGroup[] = [
         title: "Поступления",
         icon: BanknoteArrowDown,
         url: APP_ROUTES.INCOMES,
+      },
+    ],
+  },
+  {
+    title: "Персонал",
+    icon: Users,
+    items: [
+      {
+        title: "Преподователи",
+        icon: User,
+        url: APP_ROUTES.TEACHERS,
       },
     ],
   },
