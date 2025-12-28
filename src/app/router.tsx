@@ -4,8 +4,7 @@ import { Home } from "@/pages/home";
 import App from "./app.tsx";
 import { Login } from "@/pages/login";
 import { StudentAdd } from "@/pages/student-add";
-import { Incomes } from "@/pages/incomes";
-import { Student } from "@/pages/student";
+import { Student } from "@/pages/student-page";
 
 
 export const router = createBrowserRouter([
@@ -18,7 +17,7 @@ export const router = createBrowserRouter([
       },
       {
         path: APP_ROUTES.STUDENTS,
-        lazy: () => import("@/pages/students/ui/Students.tsx")
+        lazy: () => import("@/pages/students-page/ui/Students.tsx")
       },
       {
         path: APP_ROUTES.ADD_STUDENT,
@@ -26,7 +25,7 @@ export const router = createBrowserRouter([
       },
       {
         path: APP_ROUTES.INCOMES,
-        element: <Incomes />,
+        lazy: () => import("@/pages/incomes/ui/Incomes.tsx"),
       },
       {
         path: APP_ROUTES.STUDENT,

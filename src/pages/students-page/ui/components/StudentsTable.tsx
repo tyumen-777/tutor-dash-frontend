@@ -5,7 +5,7 @@ import {
   getFilteredRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { TStudent } from "../../model/student.types";
+import type { TStudent } from "@/shared/student";
 import {
   DropdownMenu,
   DropdownMenuContent,

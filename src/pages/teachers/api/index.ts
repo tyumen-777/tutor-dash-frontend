@@ -1,7 +1,7 @@
 import { api } from "@/app/api"
 import {teacherManageSchema} from '../model/manage-schema'
 import { z } from "zod"
-import type { TTeacher } from "../model/teacher.types"
+import type { TTeacher } from "@/shared/teacher"
 
 
 export const handleCreateTeacher = (data: z.infer<typeof teacherManageSchema>) => {

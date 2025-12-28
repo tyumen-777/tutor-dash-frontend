@@ -5,34 +5,7 @@ import { ManageTeacher } from "./ManageTeacher";
 import { useState } from "react";
 import { getTeachers, handleCreateTeacher } from "../api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ColumnDef } from "@tanstack/react-table";
-import { TTeacher } from "../model/teacher.types";
 import { TeachersTable } from "./components/TeachersTable";
-import { teacherManageSchema } from "../model/manage-schema";
-import z from "zod";
-
-const columns: ColumnDef<TTeacher>[] = [
-  {
-    accessorKey: "firstName",
-    header: "Имя",
-    cell: (info) => info.getValue(),
-  },
-  {
-    accessorKey: "lastName",
-    header: "Фамилия",
-    cell: (info) => info.getValue(),
-  },
-  {
-    accessorKey: "phone",
-    header: "Телефон",
-    cell: (info) => info.getValue(),
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-    cell: (info) => info.getValue(),
-  },
-];
 
 const Teachers = () => {
   const [isAddTeacherOpen, setIsAddTeacherOpen] = useState(false);

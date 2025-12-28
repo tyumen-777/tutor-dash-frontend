@@ -1,5 +1,12 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/kit/table";
-import { TTeacher } from "../../model/teacher.types";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/shared/ui/kit/table";
+import type { TTeacher } from "@/shared/teacher";
 import {
   ColumnDef,
   flexRender,

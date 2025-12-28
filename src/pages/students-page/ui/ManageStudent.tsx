@@ -25,6 +25,8 @@ import {
   SelectValue,
 } from "@/shared/ui/kit/select";
 import { studentManageSchema } from "../model/manage-schema";
+import { getTeachers, handleCreateStudent } from "../api";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 
 type TManageStudentProps = {
   open: boolean;
@@ -37,8 +39,8 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
   const form = useForm<z.infer<typeof studentManageSchema>>({
     resolver: zodResolver(studentManageSchema),
     defaultValues: {
-      name: "",
-      surname: "",
+      firstName: "",
+      lastName: "",
       phone: "",
       email: "",
       age: 0,
@@ -46,9 +48,25 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
       gender: undefined,
     },
   });
+  const queryClient = useQueryClient()
 
-  const handleSubmit = (data: z.infer<typeof studentManageSchema>) => {
-    console.log(data);
+  const { data: teachers } = useQuery({
+    queryKey: ["teachers"],
+    queryFn: getTeachers,
+    enabled: open,
+  });
+
+  const createStudentMutation = useMutation({
+    mutationFn: handleCreateStudent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      onClose();
+    },
+  });
+
+  const handleSubmit =  async(data: z.infer<typeof studentManageSchema>) => {
+    await createStudentMutation.mutateAsync(data);
+    form.reset();
   };
 
   return (
@@ -71,7 +89,7 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
           >
             <FormField
               control={form.control}
-              name="name"
+              name="firstName"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Имя</FormLabel>
@@ -84,7 +102,7 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
             />
             <FormField
               control={form.control}
-              name="surname"
+              name="lastName"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Фамилия</FormLabel>
@@ -163,9 +181,11 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
                         <SelectValue placeholder="Преподаватель" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1">Преподаватель 1</SelectItem>
-                        <SelectItem value="2">Преподаватель 2</SelectItem>
-                        <SelectItem value="3">Преподаватель 3</SelectItem>
+                        {teachers?.data.map((teacher) => (
+                          <SelectItem key={teacher.id} value={teacher.id.toString()}>
+                            {teacher.firstName} {teacher.lastName}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </FormControl>
@@ -188,8 +208,8 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
                         <SelectValue placeholder="Пол" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="male">Мужской</SelectItem>
-                        <SelectItem value="female">Женский</SelectItem>
+                        <SelectItem value="MALE">Мужской</SelectItem>
+                        <SelectItem value="FEMALE">Женский</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>
