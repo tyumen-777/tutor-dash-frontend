@@ -23,6 +23,11 @@ import {
 import { Button } from "@/shared/ui/kit/button.tsx";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
+type TableMeta = {
+  onDelete?: (id: number) => void;
+  onEdit?: (id: number) => void;
+};
+
 const columns: ColumnDef<TStudent>[] = [
   {
     accessorKey: "firstName",
@@ -52,21 +57,22 @@ const columns: ColumnDef<TStudent>[] = [
   {
     id: "actions",
     cell: (info) => {
+      const { onDelete, onEdit } = info.table.options.meta as TableMeta;
       return (
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
               <MoreHorizontal />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem className="justify-between">
+            <DropdownMenuItem className="justify-between" onClick={() => onEdit?.(info.row.original.id)}>
               Редактировать
               <Pencil />
             </DropdownMenuItem>
             <DropdownMenuItem
               className="justify-between"
-              onClick={() => console.log(info.row.original.id)}
+              onClick={() => onDelete?.(info.row.original.id)}
             >
               <span className="text-red-500">Удалить</span>
               <Trash2 color="#fb2c36" />
@@ -82,10 +88,17 @@ type TStudentsTableProps = {
   data?: TStudent[];
   globalFilter: string;
   setGlobalFilter: (filter: string) => void;
+  onDelete: (id: number) => void;
+  onEdit: (id: number) => void;
 };
 
-export const StudentsTable = ({data, globalFilter, setGlobalFilter}: TStudentsTableProps) => {
-  
+export const StudentsTable = ({
+  data,
+  globalFilter,
+  setGlobalFilter,
+  onDelete,
+  onEdit,
+}: TStudentsTableProps) => {
   const table = useReactTable({
     data: data ?? [],
     columns,
@@ -101,6 +114,10 @@ export const StudentsTable = ({data, globalFilter, setGlobalFilter}: TStudentsTa
     },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    meta: {
+      onDelete,
+      onEdit,
+    },
   });
 
   return (

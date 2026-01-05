@@ -1,10 +1,9 @@
 import { createBrowserRouter } from "react-router-dom";
-import { APP_ROUTES } from "@/shared/model/routes.ts";
+import { APP_ROUTES } from "@/shared/model";
 import { Home } from "@/pages/home";
 import App from "./app.tsx";
 import { Login } from "@/pages/login";
 import { StudentAdd } from "@/pages/student-add";
-import { Student } from "@/pages/student-page";
 
 
 export const router = createBrowserRouter([
@@ -17,7 +16,7 @@ export const router = createBrowserRouter([
       },
       {
         path: APP_ROUTES.STUDENTS,
-        lazy: () => import("@/pages/students-page/ui/Students.tsx")
+        lazy: () => import("@/pages/students-page/ui/StudentsPage.tsx")
       },
       {
         path: APP_ROUTES.ADD_STUDENT,
@@ -29,11 +28,11 @@ export const router = createBrowserRouter([
       },
       {
         path: APP_ROUTES.STUDENT,
-        element: <Student />,
+        lazy: () => import("@/pages/student-page/ui/StudentPage.tsx"),
       },
       {
         path: APP_ROUTES.TEACHERS,
-        lazy: () => import("@/pages/teachers/ui/Teachers.tsx")
+        lazy: () => import("@/pages/teachers-page/ui/TeachersPage.tsx")
       },
     ],
   },

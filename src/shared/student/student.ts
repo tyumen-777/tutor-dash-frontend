@@ -5,4 +5,6 @@ export type TStudent = {
     phone: string;
     age: number;
     email: string;
+    teacherId: number;
+    gender: "MALE" | "FEMALE";
   };

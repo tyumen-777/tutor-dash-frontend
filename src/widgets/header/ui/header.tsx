@@ -1,4 +1,4 @@
-import { APP_ROUTES } from "@/shared/model/routes";
+import { APP_ROUTES } from "@/shared/model";
 import { Link } from "react-router-dom";
 
 export const Header = () => {

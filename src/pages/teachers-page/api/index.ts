@@ -1,4 +1,4 @@
-import { api } from "@/app/api"
+import { api } from "@/shared/api"
 import {teacherManageSchema} from '../model/manage-schema'
 import { z } from "zod"
 import type { TTeacher } from "@/shared/teacher"

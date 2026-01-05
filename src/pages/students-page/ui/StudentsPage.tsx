@@ -6,19 +6,34 @@ import { useState } from "react";
 import { Button } from "@/shared/ui/kit/button.tsx";
 import { CirclePlus } from "lucide-react";
 
-import ManageStudent from "./ManageStudent";
-import { useQuery } from "@tanstack/react-query";
-import { getStudents } from "../api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getStudents, handleDeleteStudent } from "../api";
 import { StudentsTable } from "./components/StudentsTable";
+import ManageStudent from "./components/ManageStudent";
 
 const Students = () => {
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
+  const [studentId, setStudentId] = useState<number | undefined>(undefined);
   const [globalFilter, setGlobalFilter] = useState("");
+  const queryClient = useQueryClient();
 
   const { data } = useQuery({
     queryKey: ["students"],
     queryFn: getStudents,
   });
+  
+  const deleteStudentMutation = useMutation({
+    mutationFn: handleDeleteStudent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+    },
+  });
+
+  const handleEditStudent = (id: number) => {
+    setIsAddStudentOpen(true);
+    setStudentId(id);
+  };
+
 
   return (
     <>
@@ -44,12 +59,18 @@ const Students = () => {
             data={data?.data}
             globalFilter={globalFilter}
             setGlobalFilter={setGlobalFilter}
+            onDelete={deleteStudentMutation.mutate}
+            onEdit={handleEditStudent}
           />
         </div>
       </div>
       <ManageStudent
         open={isAddStudentOpen}
-        onClose={() => setIsAddStudentOpen(false)}
+        onClose={() => {
+          setIsAddStudentOpen(false);
+          setStudentId(undefined);
+        }}
+        studentId={studentId}
       />
     </>
   );

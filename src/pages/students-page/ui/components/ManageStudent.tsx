@@ -24,31 +24,51 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/ui/kit/select";
-import { studentManageSchema } from "../model/manage-schema";
-import { getTeachers, handleCreateStudent } from "../api";
+import { studentManageSchema } from "../../model/manage-schema";
+import {
+  getStudent,
+  getTeachers,
+  handleCreateStudent,
+  handleUpdateStudent,
+} from "../../api";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 type TManageStudentProps = {
   open: boolean;
   onClose: () => void;
+  studentId?: number;
+};
+const defaultValues = {
+  firstName: "",
+  lastName: "",
+  phone: "",
+  email: "",
+  age: 0,
+  teacherId: 0,
+  gender: undefined,
 };
 
-
-
-const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
+const ManageStudent = ({ open, onClose, studentId }: TManageStudentProps) => {
+  const { data: student } = useQuery({
+    queryKey: ["student", studentId],
+    queryFn: () => getStudent(studentId ?? 0),
+    enabled: !!studentId,
+  });
   const form = useForm<z.infer<typeof studentManageSchema>>({
     resolver: zodResolver(studentManageSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      phone: "",
-      email: "",
-      age: 0,
-      teacherId: 0,
-      gender: undefined,
-    },
+    defaultValues,
   });
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (studentId && student?.data) {
+      form.reset(student.data);
+    }
+    if (!studentId) {
+      form.reset(defaultValues);
+    }
+  }, [student?.data, form, studentId, open]);
 
   const { data: teachers } = useQuery({
     queryKey: ["teachers"],
@@ -64,27 +84,41 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
     },
   });
 
-  const handleSubmit =  async(data: z.infer<typeof studentManageSchema>) => {
-    await createStudentMutation.mutateAsync(data);
-    form.reset();
+  const updateStudentMutation = useMutation({
+    mutationFn: handleUpdateStudent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      onClose();
+    },
+  });
+
+  const handleSubmit = async (data: z.infer<typeof studentManageSchema>) => {
+    if (studentId) {
+      await updateStudentMutation.mutateAsync({ id: studentId, data });
+    } else {
+      await createStudentMutation.mutateAsync(data);
+    }
+    form.reset(defaultValues);
   };
 
   return (
     <Dialog
       open={open}
       onOpenChange={() => {
-        form.reset();
+        form.reset(defaultValues);
         onClose();
       }}
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Добавить студента</DialogTitle>
+          <DialogTitle>
+            {studentId ? "Редактировать" : "Добавить"} студента
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            onReset={() => form.reset()}
+            onReset={() => form.reset(defaultValues)}
             className="space-y-4"
           >
             <FormField
@@ -151,15 +185,8 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
                   <FormLabel>Возраст</FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
                       placeholder="Введите возраст"
-                      value={field.value ?? ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(
-                          value === "" ? undefined : Number(value),
-                        );
-                      }}
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -174,6 +201,7 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
                   <FormLabel>Преподаватель</FormLabel>
                   <FormControl>
                     <Select
+                      key={field.value ?? "empty"}
                       value={field.value ? field.value.toString() : ""}
                       onValueChange={(value) => field.onChange(Number(value))}
                     >
@@ -182,7 +210,10 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
                       </SelectTrigger>
                       <SelectContent>
                         {teachers?.data.map((teacher) => (
-                          <SelectItem key={teacher.id} value={teacher.id.toString()}>
+                          <SelectItem
+                            key={teacher.id}
+                            value={teacher.id.toString()}
+                          >
                             {teacher.firstName} {teacher.lastName}
                           </SelectItem>
                         ))}
@@ -201,6 +232,7 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
                   <FormLabel>Пол</FormLabel>
                   <FormControl>
                     <Select
+                      key={field.value ?? "empty"}
                       value={field.value ?? ""}
                       onValueChange={(value) => field.onChange(value)}
                     >
@@ -222,7 +254,9 @@ const ManageStudent = ({ open, onClose }: TManageStudentProps) => {
               <Button type="reset" variant="outline">
                 Сбросить
               </Button>
-              <Button type="submit">Добавить</Button>
+              <Button type="submit">
+                {studentId ? "Сохранить" : "Добавить"}
+              </Button>
             </div>
           </form>
         </Form>
