@@ -22,6 +22,10 @@ import {
 } from "@/shared/ui/kit/table.tsx";
 import { Button } from "@/shared/ui/kit/button.tsx";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
 
 type TableMeta = {
   onDelete?: (id: number) => void;
@@ -50,9 +54,12 @@ const columns: ColumnDef<TStudent>[] = [
     cell: (info) => info.getValue(),
   },
   {
-    accessorKey: "age",
-    header: "Возраст",
-    cell: (info) => info.getValue(),
+    accessorKey: "birthDate",
+    header: "Дата рождения",
+    cell: (info) => {
+      const date = info.getValue<string | null>();
+      return date ? dayjs.utc(date).format("DD.MM.YYYY") : "";
+    },
   },
   {
     id: "actions",

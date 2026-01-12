@@ -33,6 +33,7 @@ import {
 } from "../../api";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { SingleDatePicker } from "@/shared/components";
 
 type TManageStudentProps = {
   open: boolean;
@@ -44,7 +45,7 @@ const defaultValues = {
   lastName: "",
   phone: "",
   email: "",
-  age: 0,
+  birthDate: undefined,
   teacherId: 0,
   gender: undefined,
 };
@@ -179,18 +180,9 @@ const ManageStudent = ({ open, onClose, studentId }: TManageStudentProps) => {
             />
             <FormField
               control={form.control}
-              name="age"
+              name="birthDate"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Возраст</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Введите возраст"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                <SingleDatePicker label="Дата рождения" field={field} />
               )}
             />
             <FormField
