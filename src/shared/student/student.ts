@@ -3,7 +3,7 @@ export type TStudent = {
     firstName: string;
     lastName: string;
     phone: string;
-    birthDate: string;
+    birthDate: Date;
     email: string;
     teacherId: number;
     gender: "MALE" | "FEMALE";
