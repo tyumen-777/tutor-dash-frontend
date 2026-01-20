@@ -1,44 +1,88 @@
 import { TStudent } from "@/shared/student";
+import { Badge } from "@/shared/ui/kit/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/kit/card";
 import dayjs from "dayjs";
+import { Calendar, Mail, Mars, Phone } from "lucide-react";
 
 type TCommonInfoProps = {
   data?: TStudent;
 };
 
+
 export const CommonInfo = ({ data }: TCommonInfoProps) => {
   return (
-    <div className="flex flex-col gap-2 border-light-grey border-1 w-fit rounded-md p-2 shadow-sm">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-lg bg-light-grey px-1 rounded-md">
-          Общая информация
-        </h2>
-        <span className="text-sm">Статус</span>
-        <div className="flex flex-col">
-          <span className="text-sm">Возраст</span>
-          <span className="text-md">
+    <Card className="border-border bg-card w-fit min-w-sm">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <CardTitle>Общая информация</CardTitle>
+          <Badge className="bg-success text-success-foreground capitalize">
+            Активный
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid gap-4">
+          <div className="flex items-center gap-3 text-sm">
+            <Mail className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">Email</span>
+            <span className="ml-auto text-card-foreground">{data?.email}</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <Phone className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">Телефон</span>
+            <span className="ml-auto text-card-foreground">{data?.phone}</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <Calendar className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">Дата рождения</span>
+            <span className="ml-auto text-card-foreground">
+              {data?.birthDate
+                ? dayjs(data.birthDate).format("DD.MM.YYYY")
+                : "-"}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <Mars className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">Пол</span>
+            <span className="ml-auto text-card-foreground">
+              {data?.gender === "MALE" ? "Мужской" : "Женский"}
+            </span>
+          </div>
+        </div>
+      </CardContent>
+      {/* <ItemContent>
+        
+        <ItemContent>
+          <ItemTitle>Статус</ItemTitle>
+          <ItemDescription>123</ItemDescription>
+        </ItemContent>
+        <ItemContent>
+          <ItemTitle>Возраст</ItemTitle>
+          <ItemDescription>
             {data?.birthDate
               ? `${dayjs(data.birthDate).format("DD.MM.YYYY")} (${dayjs().diff(dayjs(data.birthDate), "year")} лет)`
               : "-"}
-          </span>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-sm">Пол</span>
-          <span className="text-md">
+          </ItemDescription>
+        </ItemContent>
+        <ItemContent>
+          <ItemTitle>Пол</ItemTitle>
+          <ItemDescription>
             {data?.gender === "MALE" ? "Мужской" : "Женский"}
-          </span>
-        </div>
-      </div>
-      <div className="flex flex-col gap-1">
-        <h2 className="text-lg bg-light-grey px-1 rounded-md">Контакты</h2>
-        <div className="flex flex-col">
-          <span className="text-sm">Email</span>
-          <span className="text-md">{data?.email}</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-sm">Мобильный телефон</span>
-          <span className="text-md">{data?.phone}</span>
-        </div>
-      </div>
-    </div>
+          </ItemDescription>
+        </ItemContent>
+      </ItemContent>
+      <ItemSeparator />
+      <ItemContent>
+        <ItemHeader>Контакты</ItemHeader>
+        <ItemContent>
+          <ItemTitle>Email</ItemTitle>
+          <ItemDescription>{data?.email}</ItemDescription>
+        </ItemContent>
+        <ItemContent>
+          <ItemTitle>Мобильный телефон</ItemTitle>
+          <ItemDescription>{data?.phone}</ItemDescription>
+        </ItemContent>
+      </ItemContent> */}
+    </Card>
   );
 };
