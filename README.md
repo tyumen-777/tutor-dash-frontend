@@ -1,54 +1,65 @@
-# React + TypeScript + Vite
+# Tutor Dash
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+CRM-система для онлайн школ английского языка. Приложение предназначено для управления учениками, преподавателями, расписанием занятий и финансовым учётом.
 
-Currently, two official plugins are available:
+## Технологии
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Основной стек
 
-## Expanding the ESLint configuration
+- **React 19** — библиотека для построения пользовательских интерфейсов
+- **TypeScript** — типизированный JavaScript
+- **Vite** — быстрый сборщик и dev-сервер
+- **Tailwind CSS 4** — utility-first CSS фреймворк
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Роутинг и управление состоянием
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- **React Router DOM** — клиентская маршрутизация
+- **TanStack Query** — управление серверным состоянием, кэширование и синхронизация данных
+
+### UI компоненты
+
+- **Radix UI** — доступные и кастомизируемые примитивы (Dialog, Dropdown, Select, Popover и др.)
+- **Lucide React** — иконки
+
+### Формы и валидация
+
+- **React Hook Form** — управление формами
+- **Zod** — валидация схем данных
+- **@hookform/resolvers** — интеграция Zod с React Hook Form
+
+### Таблицы и данные
+
+- **TanStack Table** — headless таблицы с сортировкой, фильтрацией и пагинацией
+
+### Архитектура
+
+- **Feature-Sliced Design** — методология организации кода
+
+## Скрипты
+
+```bash
+# Запуск dev-сервера
+npm run dev
+
+# Сборка для продакшена
+npm run build
+
+# Линтинг
+npm run lint
+
+# Превью собранного приложения
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Структура проекта (FSD)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+```
+src/
+├── app/          # Инициализация приложения, провайдеры, роутер
+├── pages/        # Страницы приложения
+├── widgets/      # Композиционные блоки (sidebar, header)
+├── features/     # Фичи (breadcrumbs и др.)
+├── entities/     # Бизнес-сущности
+├── shared/       # Переиспользуемые компоненты, утилиты, API
+└── hooks/        # Общие хуки
 ```
