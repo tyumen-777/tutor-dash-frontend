@@ -5,6 +5,12 @@ export type TStudent = {
     phone: string;
     birthDate: Date;
     email: string;
-    teacherId: number;
     gender: "MALE" | "FEMALE";
+    studentsInfo: TStudentInfo;
+    role: "STUDENT";
   };
+
+  export type TStudentInfo = {
+    languageLevel: string;
+    teacherId: number
+  }

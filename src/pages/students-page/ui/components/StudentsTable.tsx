@@ -7,12 +7,6 @@ import {
 } from "@tanstack/react-table";
 import type { TStudent } from "@/shared/student";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/shared/ui/kit/dropdown-menu";
-import {
   Table,
   TableBody,
   TableCell,
@@ -20,10 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/shared/ui/kit/table.tsx";
-import { Button } from "@/shared/ui/kit/button.tsx";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { generatePath, Link } from "react-router-dom";
+import { EditTableMenu } from "./EditTableMenu";
+import { APP_ROUTES } from "@/shared/model";
 
 dayjs.extend(utc);
 
@@ -34,24 +29,23 @@ type TableMeta = {
 
 const columns: ColumnDef<TStudent>[] = [
   {
-    accessorKey: "firstName",
-    header: "Имя",
-    cell: (info) => info.getValue(),
-  },
-  {
-    accessorKey: "lastName",
-    header: "Фамилия",
-    cell: (info) => info.getValue(),
+    id: "fullName",
+    header: "ФИО",
+    cell: (info) => (
+      <Link to={generatePath(APP_ROUTES.STUDENT, { id: String(info.row.original.id) })}>
+        <span className="text-blue-500 hover:underline">{info.row.original.firstName} {info.row.original.lastName}</span>
+      </Link>
+    ),
   },
   {
     accessorKey: "email",
     header: "Почта",
-    cell: (info) => info.getValue(),
+    // cell: (info) => info.getValue(),
   },
   {
     accessorKey: "phone",
     header: "Телефон",
-    cell: (info) => info.getValue(),
+    // cell: (info) => info.getValue(),
   },
   {
     accessorKey: "birthDate",
@@ -66,26 +60,11 @@ const columns: ColumnDef<TStudent>[] = [
     cell: (info) => {
       const { onDelete, onEdit } = info.table.options.meta as TableMeta;
       return (
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem className="justify-between" onClick={() => onEdit?.(info.row.original.id)}>
-              Редактировать
-              <Pencil />
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="justify-between"
-              onClick={() => onDelete?.(info.row.original.id)}
-            >
-              <span className="text-red-500">Удалить</span>
-              <Trash2 color="#fb2c36" />
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <EditTableMenu
+          onEdit={onEdit}
+          onDelete={onDelete}
+          id={info.row.original.id}
+        />
       );
     },
   },
@@ -114,8 +93,8 @@ export const StudentsTable = ({
     },
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: (row, _columnId, filterValue) => {
-      const firstName = row.getValue<string>("firstName")?.toLowerCase() ?? "";
-      const lastName = row.getValue<string>("lastName")?.toLowerCase() ?? "";
+      const firstName = row.original.firstName?.toLowerCase() ?? "";
+      const lastName = row.original.lastName?.toLowerCase() ?? "";
       const search = filterValue.toLowerCase();
       return firstName.includes(search) || lastName.includes(search);
     },

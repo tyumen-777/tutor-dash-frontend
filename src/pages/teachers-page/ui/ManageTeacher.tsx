@@ -18,6 +18,8 @@ import {
 } from "@/shared/ui/kit/form";
 import { Input } from "@/shared/ui/kit/input";
 import { Button } from "@/shared/ui/kit/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/kit/select";
+import { SingleDatePicker } from "@/shared/components";
 
 type TManageTeacherProps = {
   open: boolean;
@@ -38,6 +40,8 @@ export const ManageTeacher = ({
       lastName: "",
       phone: "",
       email: "",
+      birthDate: undefined,
+      gender: undefined,
     },
   });
 
@@ -88,6 +92,31 @@ export const ManageTeacher = ({
             />
             <FormField
               control={form.control}
+              name="gender"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Пол</FormLabel>
+                  <FormControl>
+                    <Select
+                      key={field.value ?? "empty"}
+                      value={field.value ?? ""}
+                      onValueChange={(value) => field.onChange(value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Пол" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MALE">Мужской</SelectItem>
+                        <SelectItem value="FEMALE">Женский</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name="phone"
               render={({ field }) => (
                 <FormItem>
@@ -114,6 +143,13 @@ export const ManageTeacher = ({
                   </FormControl>
                   <FormMessage />
                 </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="birthDate"
+              render={({ field }) => (
+                <SingleDatePicker label="Дата рождения" field={field} />
               )}
             />
             <div className="flex justify-end gap-2">

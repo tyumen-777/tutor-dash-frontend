@@ -6,5 +6,7 @@ export type TTeacher = {
     lastName: string;
     phone: string;
     email: string;
-    students: Array<TStudent>
+    students: Array<TStudent>;
+    birthDate: Date;
+    gender: "MALE" | "FEMALE";
 }

@@ -13,4 +13,6 @@ export const teacherManageSchema = z.object({
     .regex(nameRegex, { message: "Фамилия должна содержать только буквы" }),
   phone: z.string().min(1, { message: "Телефон должен быть заполнен" }),
   email: z.email({ message: "Email должен быть заполнен" }),
+  birthDate: z.date({ message: "Возраст должен быть заполнен" }),
+  gender: z.enum(["MALE", "FEMALE"], { message: "Пол должен быть заполнен" }),
 });
