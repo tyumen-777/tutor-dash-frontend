@@ -88,3 +88,43 @@ CRM-система для школ иностранных языков и обр
 - [TanStack Table](https://tanstack.com/table) для таблиц
 - [Lucide React](https://lucide.dev/) для иконок
 - [dayjs](https://day.js.org/) для работы с датами
+
+## Генерация API-клиента
+
+Orval генерирует типизированные Axios-функции и хуки TanStack Query из
+OpenAPI-документа. По умолчанию схема загружается с
+`http://localhost:4000/api`, а запросы приложения отправляются на
+`NEXT_PUBLIC_API_URL`.
+
+```bash
+cp .env.example .env
+npm run api:generate
+```
+
+URL схемы переопределяется переменной `OPENAPI_URL`. Если она указывает на
+локальный файл, для автоматической перегенерации при его изменении можно
+использовать `npm run api:watch`.
+
+Сгенерированные файлы появятся в `src/lib/api/generated` и уже будут содержать
+React Query hooks. Имя хука строится из `operationId` в OpenAPI. Например, если
+операция имеет `operationId: getStudents`, клиентский компонент сможет вызвать:
+
+```tsx
+'use client'
+
+import { useGetStudents } from '@/lib/api/generated/students/students'
+
+export function Students() {
+	const { data, isPending, error } = useGetStudents()
+
+	if (isPending) return <p>Загрузка...</p>
+	if (error) return <p>Не удалось загрузить учеников</p>
+
+	return <pre>{JSON.stringify(data, null, 2)}</pre>
+}
+```
+
+Точный путь импорта зависит от тегов OpenAPI, а имя хука — от `operationId`.
+Сгенерированный код изменять вручную не нужно: общие настройки Axios находятся
+в `src/lib/api-client.ts`, а кэш React Query настраивается в
+`src/app/providers/query-provider.tsx`.

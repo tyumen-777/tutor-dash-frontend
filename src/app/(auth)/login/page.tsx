@@ -38,7 +38,7 @@ export default function LoginPage() {
 									Войти в аккаунт
 								</CardTitle>
 								<CardDescription className='mt-1 text-sm leading-6 text-[#5D665B]'>
-									Используйте логин и пароль, чтобы открыть
+									Используйте почту и пароль, чтобы открыть
 									панель занятий.
 								</CardDescription>
 							</CardHeader>
@@ -48,9 +48,9 @@ export default function LoginPage() {
 									<div className='space-y-2'>
 										<label
 											className='text-sm leading-none font-medium'
-											htmlFor='login'
+											htmlFor='email'
 										>
-											Логин
+											Почта
 										</label>
 										<div className='relative'>
 											<Mail
@@ -58,10 +58,10 @@ export default function LoginPage() {
 												aria-hidden='true'
 											/>
 											<input
-												id='login'
-												name='login'
-												type='text'
-												autoComplete='username'
+												id='email'
+												name='email'
+												type='email'
+												autoComplete='email'
 												required
 												placeholder='teacher@example.com'
 												className='h-11 w-full rounded-md border border-[#CAD3C6] bg-[#FBFCF8] pr-3 pl-10 text-sm transition-colors outline-none placeholder:text-[#8A9286] focus:border-[#7E9B88] focus:ring-3 focus:ring-[#7E9B88]/20'
