@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/table'
 
 import { type DataTableFeatures, features } from './data-table-features'
+import { StudentFormDialog } from './student-form-dialog'
 
 interface DataTableProps<TData extends RowData> {
 	columns: ColumnDef<DataTableFeatures, TData>[]
@@ -48,7 +49,7 @@ export function DataTable<TData extends RowData>({
 
 	return (
 		<div>
-			<div className='flex items-center py-4'>
+			<div className='flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between'>
 				<Input
 					placeholder='Найти по ФИО...'
 					value={
@@ -63,6 +64,7 @@ export function DataTable<TData extends RowData>({
 					}
 					className='max-w-sm'
 				/>
+				<StudentFormDialog />
 			</div>
 			<div className='overflow-hidden rounded-md border'>
 				<Table>
@@ -112,7 +114,7 @@ export function DataTable<TData extends RowData>({
 					</TableBody>
 				</Table>
 			</div>
-			<div className='flex items-center justify-end space-x-2 py-4'>
+			<div className='flex items-center justify-end gap-2 py-4'>
 				<Button
 					variant='outline'
 					size='sm'
