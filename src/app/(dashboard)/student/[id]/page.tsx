@@ -1,4 +1,4 @@
-import StudentProfilePage from '@/views/student/student-profile-page'
+import StudentProfilePage from '@/features/student/student-profile-page'
 
 export default async function StudentPage({
 	params
