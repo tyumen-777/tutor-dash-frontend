@@ -14,7 +14,7 @@ import {
 	DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 
-import { type DataTableFeatures } from './data-table-features'
+import { type DataTableFeatures } from '@/lib/data-table-features'
 
 export type Student = {
 	id: string

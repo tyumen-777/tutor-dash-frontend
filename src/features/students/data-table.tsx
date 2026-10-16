@@ -20,7 +20,8 @@ import {
 	TableRow
 } from '@/components/ui/table'
 
-import { type DataTableFeatures, features } from './data-table-features'
+import { type DataTableFeatures, features } from '@/lib/data-table-features'
+
 import { StudentFormDialog } from './student-form-dialog'
 
 interface DataTableProps<TData extends RowData> {
