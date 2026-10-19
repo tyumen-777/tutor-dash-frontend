@@ -15,7 +15,10 @@ import type {
 
 import { apiRequest } from '../../api-client'
 import type { BodyType, ErrorType } from '../../api-client'
-import type { CreateOrganizationOwnerRequest } from '../models'
+import type {
+	CreateOrganizationOwnerRequest,
+	OrganizationMemberResponse
+} from '../models'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
 
@@ -28,7 +31,7 @@ export const adminControllerCreateOrganizationOwner = (
 	options?: SecondParameter<typeof apiRequest>,
 	signal?: AbortSignal
 ) => {
-	return apiRequest<void>(
+	return apiRequest<OrganizationMemberResponse>(
 		{
 			url: `/admin/organizations`,
 			method: 'POST',

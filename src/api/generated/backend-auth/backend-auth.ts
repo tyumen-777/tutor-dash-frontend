@@ -23,7 +23,7 @@ import type {
 
 import { apiRequest } from '../../api-client'
 import type { BodyType, ErrorType } from '../../api-client'
-import type { LoginRequest } from '../models'
+import type { AuthSessionResponse, LoginRequest } from '../models'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
 
@@ -54,7 +54,7 @@ export const backendAuthControllerLogin = (
 	options?: SecondParameter<typeof apiRequest>,
 	signal?: AbortSignal
 ) => {
-	return apiRequest<void>(
+	return apiRequest<AuthSessionResponse>(
 		{
 			url: `/auth/login`,
 			method: 'POST',
@@ -152,7 +152,10 @@ export const backendAuthControllerMe = (
 	options?: SecondParameter<typeof apiRequest>,
 	signal?: AbortSignal
 ) => {
-	return apiRequest<void>({ url: `/auth/me`, method: 'GET', signal }, options)
+	return apiRequest<AuthSessionResponse>(
+		{ url: `/auth/me`, method: 'GET', signal },
+		options
+	)
 }
 
 export const getBackendAuthControllerMeQueryKey = () => {

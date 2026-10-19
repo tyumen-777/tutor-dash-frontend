@@ -25,7 +25,9 @@ import { apiRequest } from '../../api-client'
 import type { BodyType, ErrorType } from '../../api-client'
 import type {
 	AcceptInvitationRequest,
-	CreateInvitationRequest
+	CreateInvitationRequest,
+	InvitationResponse,
+	OrganizationMemberResponse
 } from '../models'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -57,7 +59,7 @@ export const organizationInvitationsControllerCreateInvitation = (
 	options?: SecondParameter<typeof apiRequest>,
 	signal?: AbortSignal
 ) => {
-	return apiRequest<void>(
+	return apiRequest<InvitationResponse>(
 		{
 			url: `/organization/invitations`,
 			method: 'POST',
@@ -180,7 +182,7 @@ export const organizationInvitationsControllerGetInvitation = (
 	options?: SecondParameter<typeof apiRequest>,
 	signal?: AbortSignal
 ) => {
-	return apiRequest<void>(
+	return apiRequest<InvitationResponse>(
 		{ url: `/organization/invitations/${id}`, method: 'GET', signal },
 		options
 	)
@@ -414,7 +416,7 @@ export const organizationInvitationsControllerAcceptInvitation = (
 	options?: SecondParameter<typeof apiRequest>,
 	signal?: AbortSignal
 ) => {
-	return apiRequest<void>(
+	return apiRequest<OrganizationMemberResponse>(
 		{
 			url: `/organization/invitations/${id}/accept`,
 			method: 'POST',
