@@ -9,6 +9,7 @@ import {
 	LibraryBig,
 	type LucideIcon,
 	PanelLeftClose,
+	PanelLeftOpen,
 	Settings,
 	UsersRound,
 	WalletCards
@@ -197,15 +198,40 @@ function SidebarNavigation({ pathname }: { pathname: string }) {
 	)
 }
 
+function SidebarToggleButton() {
+	const { state, toggleSidebar } = useSidebar()
+	const isCollapsed = state === 'collapsed'
+	const label = isCollapsed ? 'Развернуть панель' : 'Свернуть панель'
+	const Icon = isCollapsed ? PanelLeftOpen : PanelLeftClose
+
+	return (
+		<SidebarMenuButton
+			size='lg'
+			tooltip={label}
+			aria-label={label}
+			aria-expanded={!isCollapsed}
+			onClick={toggleSidebar}
+		>
+			<Icon aria-hidden='true' />
+			<div className='min-w-0 group-data-[collapsible=icon]:hidden'>
+				<p className='truncate text-sm leading-5 font-medium'>{label}</p>
+				<p className='text-sidebar-foreground/70 truncate text-xs leading-4'>
+					Нажмите Cmd/Ctrl + B
+				</p>
+			</div>
+		</SidebarMenuButton>
+	)
+}
+
 export function AppSidebar({ children }: { children: React.ReactNode }) {
 	const pathname = usePathname()
 
 	return (
 		<SidebarProvider>
 			<Sidebar collapsible='icon'>
-				<SidebarHeader className='px-3 py-3'>
-					<div className='flex h-10 items-center gap-3 rounded-md px-1'>
-						<div className='bg-sidebar-primary text-sidebar-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-md [&>svg]:size-5'>
+				<SidebarHeader className='px-3 py-3 group-data-[collapsible=icon]:px-2'>
+					<div className='flex h-10 items-center gap-3 rounded-md px-1 group-data-[collapsible=icon]:px-0'>
+						<div className='bg-sidebar-primary text-sidebar-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-md group-data-[collapsible=icon]:size-8 [&>svg]:size-5'>
 							<BookOpenCheck aria-hidden='true' />
 						</div>
 						<div className='min-w-0 group-data-[collapsible=icon]:hidden'>
@@ -221,7 +247,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
 
 				<SidebarSeparator />
 
-				<SidebarContent className='px-1 py-2'>
+				<SidebarContent className='px-1 py-2 group-data-[collapsible=icon]:px-0'>
 					<SidebarGroup>
 						<SidebarGroupLabel>Рабочая область</SidebarGroupLabel>
 						<SidebarGroupContent>
@@ -230,23 +256,10 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
 					</SidebarGroup>
 				</SidebarContent>
 
-				<SidebarFooter className='px-3 py-3'>
+				<SidebarFooter className='px-3 py-3 group-data-[collapsible=icon]:px-2'>
 					<SidebarMenu>
 						<SidebarMenuItem>
-							<SidebarMenuButton
-								size='lg'
-								tooltip='Быстрый доступ'
-							>
-								<PanelLeftClose aria-hidden='true' />
-								<div className='min-w-0 group-data-[collapsible=icon]:hidden'>
-									<p className='truncate text-sm leading-5 font-medium'>
-										Быстрый доступ
-									</p>
-									<p className='text-sidebar-foreground/70 truncate text-xs leading-4'>
-										Нажмите Cmd/Ctrl + B
-									</p>
-								</div>
-							</SidebarMenuButton>
+							<SidebarToggleButton />
 						</SidebarMenuItem>
 						<SidebarMenuItem>
 							<LogoutButton />
