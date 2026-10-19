@@ -2,6 +2,7 @@
 
 import {
 	BookOpenCheck,
+	BriefcaseBusiness,
 	CalendarDays,
 	ChevronRight,
 	GraduationCap,
@@ -65,6 +66,7 @@ type NavigationGroup = {
 const navigation: (NavigationLink | NavigationGroup)[] = [
 	{ title: 'Обзор', href: '/', icon: Home },
 	{ title: 'Ученики', href: '/students', icon: UsersRound },
+	{ title: 'Преподаватели', href: '/teachers', icon: BriefcaseBusiness },
 	{ title: 'Занятия', href: '/lessons', icon: GraduationCap },
 	{
 		title: 'Финансы',
@@ -214,7 +216,9 @@ function SidebarToggleButton() {
 		>
 			<Icon aria-hidden='true' />
 			<div className='min-w-0 group-data-[collapsible=icon]:hidden'>
-				<p className='truncate text-sm leading-5 font-medium'>{label}</p>
+				<p className='truncate text-sm leading-5 font-medium'>
+					{label}
+				</p>
 				<p className='text-sidebar-foreground/70 truncate text-xs leading-4'>
 					Нажмите Cmd/Ctrl + B
 				</p>
