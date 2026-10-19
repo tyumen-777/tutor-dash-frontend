@@ -13,8 +13,8 @@ import type {
 	UseMutationResult
 } from '@tanstack/react-query'
 
-import { apiRequest } from '../../../api-client'
-import type { BodyType, ErrorType } from '../../../api-client'
+import { apiRequest } from '../../api-client'
+import type { BodyType, ErrorType } from '../../api-client'
 import type { CreateOrganizationOwnerRequest } from '../models'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]

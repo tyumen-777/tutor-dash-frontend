@@ -9,13 +9,13 @@ export default defineConfig({
 			client: 'react-query',
 			httpClient: 'axios',
 			mode: 'tags-split',
-			target: './src/lib/api/generated/endpoints.ts',
-			schemas: './src/lib/api/generated/models',
+			target: './src/api/generated/endpoints.ts',
+			schemas: './src/api/generated/models',
 			clean: true,
 			formatter: 'prettier',
 			override: {
 				mutator: {
-					path: './src/lib/api-client.ts',
+					path: './src/api/api-client.ts',
 					name: 'apiRequest'
 				}
 			}

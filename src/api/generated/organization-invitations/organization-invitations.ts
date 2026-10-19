@@ -21,8 +21,8 @@ import type {
 	UseQueryResult
 } from '@tanstack/react-query'
 
-import { apiRequest } from '../../../api-client'
-import type { BodyType, ErrorType } from '../../../api-client'
+import { apiRequest } from '../../api-client'
+import type { BodyType, ErrorType } from '../../api-client'
 import type {
 	AcceptInvitationRequest,
 	CreateInvitationRequest
