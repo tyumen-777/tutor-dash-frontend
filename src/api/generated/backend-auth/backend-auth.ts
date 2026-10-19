@@ -297,3 +297,91 @@ export function useBackendAuthControllerMe<
 
 	return withQueryKey(query, queryOptions.queryKey)
 }
+
+/**
+ * Завершает текущую сессию и удаляет cookie сессии. Без активной сессии просто очищает cookie.
+ * @summary Выход из системы
+ */
+export const backendAuthControllerLogout = (
+	options?: SecondParameter<typeof apiRequest>,
+	signal?: AbortSignal
+) => {
+	return apiRequest<void>(
+		{ url: `/auth/logout`, method: 'POST', signal },
+		options
+	)
+}
+
+export const getBackendAuthControllerLogoutMutationKey = () =>
+	['backendAuthControllerLogout'] as const
+
+export const getBackendAuthControllerLogoutMutationOptions = <
+	TError = ErrorType<unknown>,
+	TContext = unknown
+>(options?: {
+	mutation?: UseMutationOptions<
+		Awaited<ReturnType<typeof backendAuthControllerLogout>>,
+		TError,
+		void,
+		TContext
+	>
+	request?: SecondParameter<typeof apiRequest>
+}): UseMutationOptions<
+	Awaited<ReturnType<typeof backendAuthControllerLogout>>,
+	TError,
+	void,
+	TContext
+> => {
+	const mutationKey = getBackendAuthControllerLogoutMutationKey()
+	const { mutation: mutationOptions, request: requestOptions } = options
+		? options.mutation &&
+			'mutationKey' in options.mutation &&
+			options.mutation.mutationKey
+			? options
+			: { ...options, mutation: { ...options.mutation, mutationKey } }
+		: { mutation: { mutationKey }, request: undefined }
+
+	const mutationFn: MutationFunction<
+		Awaited<ReturnType<typeof backendAuthControllerLogout>>,
+		void
+	> = () => {
+		return backendAuthControllerLogout(requestOptions)
+	}
+
+	return { mutationFn, ...mutationOptions }
+}
+
+export type BackendAuthControllerLogoutMutationResult = NonNullable<
+	Awaited<ReturnType<typeof backendAuthControllerLogout>>
+>
+
+export type BackendAuthControllerLogoutMutationError = ErrorType<unknown>
+
+/**
+ * @summary Выход из системы
+ */
+export const useBackendAuthControllerLogout = <
+	TError = ErrorType<unknown>,
+	TContext = unknown
+>(
+	options?: {
+		mutation?: UseMutationOptions<
+			Awaited<ReturnType<typeof backendAuthControllerLogout>>,
+			TError,
+			void,
+			TContext
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseMutationResult<
+	Awaited<ReturnType<typeof backendAuthControllerLogout>>,
+	TError,
+	void,
+	TContext
+> => {
+	return useMutation(
+		getBackendAuthControllerLogoutMutationOptions(options),
+		queryClient
+	)
+}

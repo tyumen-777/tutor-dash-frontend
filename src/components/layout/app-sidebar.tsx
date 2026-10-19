@@ -44,6 +44,8 @@ import {
 	useSidebar
 } from '@/components/ui/sidebar'
 
+import { LogoutButton } from '@/features/auth/components/logout-button'
+
 type NavigationLink = {
 	title: string
 	href: string
@@ -245,6 +247,9 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
 									</p>
 								</div>
 							</SidebarMenuButton>
+						</SidebarMenuItem>
+						<SidebarMenuItem>
+							<LogoutButton />
 						</SidebarMenuItem>
 					</SidebarMenu>
 				</SidebarFooter>
