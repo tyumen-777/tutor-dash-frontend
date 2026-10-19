@@ -23,7 +23,11 @@ import type {
 
 import { apiRequest } from '../../api-client'
 import type { BodyType, ErrorType } from '../../api-client'
-import type { AuthSessionResponse, LoginRequest } from '../models'
+import type {
+	AuthSessionResponse,
+	LoginRequest,
+	SetActiveOrganizationRequest
+} from '../models'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
 
@@ -145,7 +149,7 @@ export const useBackendAuthControllerLogin = <
 	)
 }
 /**
- * Возвращает данные авторизованного пользователя и активной сессии.
+ * Возвращает данные авторизованного пользователя, активной сессии и список его организаций.
  * @summary Получение текущей сессии
  */
 export const backendAuthControllerMe = (
@@ -298,6 +302,111 @@ export function useBackendAuthControllerMe<
 	return withQueryKey(query, queryOptions.queryKey)
 }
 
+/**
+ * Делает указанную организацию активной для текущей сессии. Пользователь должен состоять в этой организации.
+ * @summary Выбор активной организации
+ */
+export const backendAuthControllerSetActiveOrganization = (
+	setActiveOrganizationRequest: BodyType<SetActiveOrganizationRequest>,
+	options?: SecondParameter<typeof apiRequest>,
+	signal?: AbortSignal
+) => {
+	return apiRequest<AuthSessionResponse>(
+		{
+			url: `/auth/active-organization`,
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			data: setActiveOrganizationRequest,
+			signal
+		},
+		options
+	)
+}
+
+export const getBackendAuthControllerSetActiveOrganizationMutationKey = () =>
+	['backendAuthControllerSetActiveOrganization'] as const
+
+export const getBackendAuthControllerSetActiveOrganizationMutationOptions = <
+	TError = ErrorType<unknown>,
+	TContext = unknown
+>(options?: {
+	mutation?: UseMutationOptions<
+		Awaited<ReturnType<typeof backendAuthControllerSetActiveOrganization>>,
+		TError,
+		BackendAuthControllerSetActiveOrganizationMutationVariables,
+		TContext
+	>
+	request?: SecondParameter<typeof apiRequest>
+}): UseMutationOptions<
+	Awaited<ReturnType<typeof backendAuthControllerSetActiveOrganization>>,
+	TError,
+	BackendAuthControllerSetActiveOrganizationMutationVariables,
+	TContext
+> => {
+	const mutationKey =
+		getBackendAuthControllerSetActiveOrganizationMutationKey()
+	const { mutation: mutationOptions, request: requestOptions } = options
+		? options.mutation &&
+			'mutationKey' in options.mutation &&
+			options.mutation.mutationKey
+			? options
+			: { ...options, mutation: { ...options.mutation, mutationKey } }
+		: { mutation: { mutationKey }, request: undefined }
+
+	const mutationFn: MutationFunction<
+		Awaited<ReturnType<typeof backendAuthControllerSetActiveOrganization>>,
+		BackendAuthControllerSetActiveOrganizationMutationVariables
+	> = props => {
+		const { data } = props ?? {}
+
+		return backendAuthControllerSetActiveOrganization(data, requestOptions)
+	}
+
+	return { mutationFn, ...mutationOptions }
+}
+
+export type BackendAuthControllerSetActiveOrganizationMutationResult =
+	NonNullable<
+		Awaited<ReturnType<typeof backendAuthControllerSetActiveOrganization>>
+	>
+export type BackendAuthControllerSetActiveOrganizationMutationBody =
+	BodyType<SetActiveOrganizationRequest>
+export type BackendAuthControllerSetActiveOrganizationMutationError =
+	ErrorType<unknown>
+export type BackendAuthControllerSetActiveOrganizationMutationVariables = {
+	data: BodyType<SetActiveOrganizationRequest>
+}
+
+/**
+ * @summary Выбор активной организации
+ */
+export const useBackendAuthControllerSetActiveOrganization = <
+	TError = ErrorType<unknown>,
+	TContext = unknown
+>(
+	options?: {
+		mutation?: UseMutationOptions<
+			Awaited<
+				ReturnType<typeof backendAuthControllerSetActiveOrganization>
+			>,
+			TError,
+			BackendAuthControllerSetActiveOrganizationMutationVariables,
+			TContext
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseMutationResult<
+	Awaited<ReturnType<typeof backendAuthControllerSetActiveOrganization>>,
+	TError,
+	BackendAuthControllerSetActiveOrganizationMutationVariables,
+	TContext
+> => {
+	return useMutation(
+		getBackendAuthControllerSetActiveOrganizationMutationOptions(options),
+		queryClient
+	)
+}
 /**
  * Завершает текущую сессию и удаляет cookie сессии. Без активной сессии просто очищает cookie.
  * @summary Выход из системы

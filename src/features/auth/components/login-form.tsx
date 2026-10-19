@@ -35,6 +35,14 @@ function getLoginErrorMessage(error: unknown) {
 	return 'Не удалось войти. Попробуйте еще раз.'
 }
 
+function getSelectOrganizationPath(redirectTo: string) {
+	if (redirectTo === '/') {
+		return '/select-organization'
+	}
+
+	return `/select-organization?from=${encodeURIComponent(redirectTo)}`
+}
+
 export function LoginForm({ redirectTo }: { redirectTo: string }) {
 	const router = useRouter()
 	const login = useLogin()
@@ -48,8 +56,12 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
 		login.mutate(
 			{ data: values },
 			{
-				onSuccess: () => {
-					router.replace(redirectTo)
+				onSuccess: session => {
+					router.replace(
+						session.session.activeOrganizationId
+							? redirectTo
+							: getSelectOrganizationPath(redirectTo)
+					)
 					router.refresh()
 				}
 			}

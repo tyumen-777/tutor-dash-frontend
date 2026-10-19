@@ -5,19 +5,203 @@
  * API documentation for Tutor Dash
  * OpenAPI spec version: 1.0
  */
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import type {
+	DataTag,
+	DefinedInitialDataOptions,
+	DefinedUseQueryResult,
 	MutationFunction,
 	QueryClient,
+	QueryFunction,
+	QueryKey,
+	UndefinedInitialDataOptions,
 	UseMutationOptions,
-	UseMutationResult
+	UseMutationResult,
+	UseQueryOptions,
+	UseQueryResult
 } from '@tanstack/react-query'
 
 import { apiRequest } from '../../api-client'
 import type { BodyType, ErrorType } from '../../api-client'
-import type { CreateTeacherRequest, TeacherResponse } from '../models'
+import type {
+	CreateTeacherRequest,
+	TeacherListResponse,
+	TeacherResponse
+} from '../models'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
+
+const withQueryKey = <T extends object, K>(
+	query: T,
+	queryKey: K
+): T & { queryKey: K } => {
+	const result = { queryKey } as T & { queryKey: K }
+	for (const key of Object.keys(query)) {
+		// The explicit queryKey always wins, matching the previous
+		// `{ ...query, queryKey }` spread where it was set last.
+		if (key === 'queryKey') continue
+		Object.defineProperty(result, key, {
+			enumerable: true,
+			configurable: true,
+			get: () => (query as Record<string, unknown>)[key]
+		})
+	}
+	return result
+}
+
+/**
+ * Возвращает учителей активной организации с поиском, фильтром по статусу и пагинацией. Сортировка по ФИО.
+ * @summary Список учителей
+ */
+export const teachersControllerListTeachers = (
+	options?: SecondParameter<typeof apiRequest>,
+	signal?: AbortSignal
+) => {
+	return apiRequest<TeacherListResponse>(
+		{ url: `/teachers`, method: 'GET', signal },
+		options
+	)
+}
+
+export const getTeachersControllerListTeachersQueryKey = () => {
+	return [`/teachers`] as const
+}
+
+export const getTeachersControllerListTeachersQueryOptions = <
+	TData = Awaited<ReturnType<typeof teachersControllerListTeachers>>,
+	TError = ErrorType<unknown>
+>(options?: {
+	query?: Partial<
+		UseQueryOptions<
+			Awaited<ReturnType<typeof teachersControllerListTeachers>>,
+			TError,
+			TData
+		>
+	>
+	request?: SecondParameter<typeof apiRequest>
+}) => {
+	const { query: queryOptions, request: requestOptions } = options ?? {}
+
+	const queryKey =
+		queryOptions?.queryKey ?? getTeachersControllerListTeachersQueryKey()
+
+	const queryFn: QueryFunction<
+		Awaited<ReturnType<typeof teachersControllerListTeachers>>
+	> = ({ signal }) => teachersControllerListTeachers(requestOptions, signal)
+
+	return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+		Awaited<ReturnType<typeof teachersControllerListTeachers>>,
+		TError,
+		TData
+	> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type TeachersControllerListTeachersQueryResult = NonNullable<
+	Awaited<ReturnType<typeof teachersControllerListTeachers>>
+>
+export type TeachersControllerListTeachersQueryError = ErrorType<unknown>
+
+export function useTeachersControllerListTeachers<
+	TData = Awaited<ReturnType<typeof teachersControllerListTeachers>>,
+	TError = ErrorType<unknown>
+>(
+	options: {
+		query: Partial<
+			UseQueryOptions<
+				Awaited<ReturnType<typeof teachersControllerListTeachers>>,
+				TError,
+				TData
+			>
+		> &
+			Pick<
+				DefinedInitialDataOptions<
+					Awaited<ReturnType<typeof teachersControllerListTeachers>>,
+					TError,
+					Awaited<ReturnType<typeof teachersControllerListTeachers>>
+				>,
+				'initialData'
+			>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): DefinedUseQueryResult<TData, TError> & {
+	queryKey: DataTag<QueryKey, TData, TError>
+}
+export function useTeachersControllerListTeachers<
+	TData = Awaited<ReturnType<typeof teachersControllerListTeachers>>,
+	TError = ErrorType<unknown>
+>(
+	options?: {
+		query?: Partial<
+			UseQueryOptions<
+				Awaited<ReturnType<typeof teachersControllerListTeachers>>,
+				TError,
+				TData
+			>
+		> &
+			Pick<
+				UndefinedInitialDataOptions<
+					Awaited<ReturnType<typeof teachersControllerListTeachers>>,
+					TError,
+					Awaited<ReturnType<typeof teachersControllerListTeachers>>
+				>,
+				'initialData'
+			>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseQueryResult<TData, TError> & {
+	queryKey: DataTag<QueryKey, TData, TError>
+}
+export function useTeachersControllerListTeachers<
+	TData = Awaited<ReturnType<typeof teachersControllerListTeachers>>,
+	TError = ErrorType<unknown>
+>(
+	options?: {
+		query?: Partial<
+			UseQueryOptions<
+				Awaited<ReturnType<typeof teachersControllerListTeachers>>,
+				TError,
+				TData
+			>
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseQueryResult<TData, TError> & {
+	queryKey: DataTag<QueryKey, TData, TError>
+}
+/**
+ * @summary Список учителей
+ */
+
+export function useTeachersControllerListTeachers<
+	TData = Awaited<ReturnType<typeof teachersControllerListTeachers>>,
+	TError = ErrorType<unknown>
+>(
+	options?: {
+		query?: Partial<
+			UseQueryOptions<
+				Awaited<ReturnType<typeof teachersControllerListTeachers>>,
+				TError,
+				TData
+			>
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseQueryResult<TData, TError> & {
+	queryKey: DataTag<QueryKey, TData, TError>
+} {
+	const queryOptions = getTeachersControllerListTeachersQueryOptions(options)
+
+	const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+		TData,
+		TError
+	> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+	return withQueryKey(query, queryOptions.queryKey)
+}
 
 /**
  * Добавляет учителя в активную организацию: ФИО, почта, телефон, Telegram, ставка в час и дата начала работы.
@@ -118,4 +302,173 @@ export const useTeachersControllerCreateTeacher = <
 		getTeachersControllerCreateTeacherMutationOptions(options),
 		queryClient
 	)
+}
+/**
+ * Возвращает учителя активной организации по идентификатору.
+ * @summary Получение учителя
+ */
+export const teachersControllerGetTeacher = (
+	id: string,
+	options?: SecondParameter<typeof apiRequest>,
+	signal?: AbortSignal
+) => {
+	return apiRequest<TeacherResponse>(
+		{ url: `/teachers/${id}`, method: 'GET', signal },
+		options
+	)
+}
+
+export const getTeachersControllerGetTeacherQueryKey = (id: string) => {
+	return [`/teachers/${id}`] as const
+}
+
+export const getTeachersControllerGetTeacherQueryOptions = <
+	TData = Awaited<ReturnType<typeof teachersControllerGetTeacher>>,
+	TError = ErrorType<unknown>
+>(
+	id: string,
+	options?: {
+		query?: Partial<
+			UseQueryOptions<
+				Awaited<ReturnType<typeof teachersControllerGetTeacher>>,
+				TError,
+				TData
+			>
+		>
+		request?: SecondParameter<typeof apiRequest>
+	}
+) => {
+	const { query: queryOptions, request: requestOptions } = options ?? {}
+
+	const queryKey =
+		queryOptions?.queryKey ?? getTeachersControllerGetTeacherQueryKey(id)
+
+	const queryFn: QueryFunction<
+		Awaited<ReturnType<typeof teachersControllerGetTeacher>>
+	> = ({ signal }) => teachersControllerGetTeacher(id, requestOptions, signal)
+
+	return {
+		queryKey,
+		queryFn,
+		enabled: id !== null && id !== undefined,
+		...queryOptions
+	} as UseQueryOptions<
+		Awaited<ReturnType<typeof teachersControllerGetTeacher>>,
+		TError,
+		TData
+	> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type TeachersControllerGetTeacherQueryResult = NonNullable<
+	Awaited<ReturnType<typeof teachersControllerGetTeacher>>
+>
+export type TeachersControllerGetTeacherQueryError = ErrorType<unknown>
+
+export function useTeachersControllerGetTeacher<
+	TData = Awaited<ReturnType<typeof teachersControllerGetTeacher>>,
+	TError = ErrorType<unknown>
+>(
+	id: string,
+	options: {
+		query: Partial<
+			UseQueryOptions<
+				Awaited<ReturnType<typeof teachersControllerGetTeacher>>,
+				TError,
+				TData
+			>
+		> &
+			Pick<
+				DefinedInitialDataOptions<
+					Awaited<ReturnType<typeof teachersControllerGetTeacher>>,
+					TError,
+					Awaited<ReturnType<typeof teachersControllerGetTeacher>>
+				>,
+				'initialData'
+			>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): DefinedUseQueryResult<TData, TError> & {
+	queryKey: DataTag<QueryKey, TData, TError>
+}
+export function useTeachersControllerGetTeacher<
+	TData = Awaited<ReturnType<typeof teachersControllerGetTeacher>>,
+	TError = ErrorType<unknown>
+>(
+	id: string,
+	options?: {
+		query?: Partial<
+			UseQueryOptions<
+				Awaited<ReturnType<typeof teachersControllerGetTeacher>>,
+				TError,
+				TData
+			>
+		> &
+			Pick<
+				UndefinedInitialDataOptions<
+					Awaited<ReturnType<typeof teachersControllerGetTeacher>>,
+					TError,
+					Awaited<ReturnType<typeof teachersControllerGetTeacher>>
+				>,
+				'initialData'
+			>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseQueryResult<TData, TError> & {
+	queryKey: DataTag<QueryKey, TData, TError>
+}
+export function useTeachersControllerGetTeacher<
+	TData = Awaited<ReturnType<typeof teachersControllerGetTeacher>>,
+	TError = ErrorType<unknown>
+>(
+	id: string,
+	options?: {
+		query?: Partial<
+			UseQueryOptions<
+				Awaited<ReturnType<typeof teachersControllerGetTeacher>>,
+				TError,
+				TData
+			>
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseQueryResult<TData, TError> & {
+	queryKey: DataTag<QueryKey, TData, TError>
+}
+/**
+ * @summary Получение учителя
+ */
+
+export function useTeachersControllerGetTeacher<
+	TData = Awaited<ReturnType<typeof teachersControllerGetTeacher>>,
+	TError = ErrorType<unknown>
+>(
+	id: string,
+	options?: {
+		query?: Partial<
+			UseQueryOptions<
+				Awaited<ReturnType<typeof teachersControllerGetTeacher>>,
+				TError,
+				TData
+			>
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseQueryResult<TData, TError> & {
+	queryKey: DataTag<QueryKey, TData, TError>
+} {
+	const queryOptions = getTeachersControllerGetTeacherQueryOptions(
+		id,
+		options
+	)
+
+	const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+		TData,
+		TError
+	> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+	return withQueryKey(query, queryOptions.queryKey)
 }

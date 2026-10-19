@@ -26,14 +26,13 @@ import {
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 
+import { useCreateTeacher } from './api/use-create-teacher'
 import {
 	type TeacherFormValues,
 	teacherFormSchema,
 	toCreateTeacherRequest
 } from './teacher-form-schema'
 import type { ErrorType } from '@/api/api-client'
-import type { TeacherResponse } from '@/api/generated/models'
-import { useTeachersControllerCreateTeacher } from '@/api/generated/teachers/teachers'
 
 function getDefaultValues(): Partial<TeacherFormValues> {
 	return {
@@ -58,18 +57,14 @@ function getErrorMessage(error: ErrorType<unknown> | null) {
 	return 'Не удалось добавить преподавателя. Попробуйте ещё раз.'
 }
 
-export function TeacherFormDialog({
-	onCreated
-}: {
-	onCreated?: (teacher: TeacherResponse) => void
-}) {
+export function TeacherFormDialog() {
 	const [open, setOpen] = useState(false)
 	const form = useForm<TeacherFormValues>({
 		resolver: zodResolver(teacherFormSchema),
 		defaultValues: getDefaultValues(),
 		reValidateMode: 'onChange'
 	})
-	const createTeacher = useTeachersControllerCreateTeacher()
+	const createTeacher = useCreateTeacher()
 	const errorMessage = getErrorMessage(createTeacher.error)
 
 	function handleOpenChange(nextOpen: boolean) {
@@ -85,10 +80,7 @@ export function TeacherFormDialog({
 		createTeacher.mutate(
 			{ data: toCreateTeacherRequest(values) },
 			{
-				onSuccess: teacher => {
-					onCreated?.(teacher)
-					handleOpenChange(false)
-				}
+				onSuccess: () => handleOpenChange(false)
 			}
 		)
 	}

@@ -16,6 +16,10 @@ export default async function DashboardLayout({
 		redirect('/login')
 	}
 
+	if (!session.session.activeOrganizationId) {
+		redirect('/select-organization')
+	}
+
 	return (
 		<TooltipProvider>
 			<AppSidebar>{children}</AppSidebar>

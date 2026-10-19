@@ -10,7 +10,7 @@ import { ru } from 'react-day-picker/locale'
 import { Badge } from '@/components/ui/badge'
 import { Calendar } from '@/components/ui/calendar'
 
-import type { TeacherLesson, TeacherLessonStatus } from './teacher-data'
+import type { TeacherLesson, TeacherLessonStatus } from './types'
 
 const statusVariant: Record<
 	TeacherLessonStatus,

@@ -1,3 +1,5 @@
+'use client'
+
 import {
 	ArrowLeft,
 	CalendarDays,
@@ -5,6 +7,7 @@ import {
 	Mail,
 	MessageCircle,
 	Phone,
+	SearchX,
 	UserRound
 } from 'lucide-react'
 import Link from 'next/link'
@@ -17,6 +20,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
 	Table,
 	TableBody,
@@ -26,15 +30,22 @@ import {
 	TableRow
 } from '@/components/ui/table'
 
+import { useTeacher } from './api/use-teacher'
 import { LessonsCalendar } from './lessons-calendar'
-import { type TeacherProfile, getTeacherProfile } from './teacher-data'
+import type { TeacherLesson, TeacherStudent } from './types'
+import type { TeacherResponse } from '@/api/generated/models'
 import { formatHourlyRate, formatStartedOn } from '@/features/teachers/format'
+
+// TODO: заменить на API, когда появятся эндпоинты занятий, учеников
+// и заработка преподавателя.
+const lessons: TeacherLesson[] = []
+const students: TeacherStudent[] = []
 
 type TeacherProfilePageProps = {
 	teacherId: string
 }
 
-function ProfileHeader({ teacher }: { teacher: TeacherProfile }) {
+function ProfileHeader({ teacher }: { teacher: TeacherResponse }) {
 	return (
 		<section className='overflow-hidden rounded-lg border border-[#C9D6CC] bg-[#F7F8F3]'>
 			<div className='grid gap-0 lg:grid-cols-[minmax(18rem,22rem)_1fr]'>
@@ -107,17 +118,11 @@ function ProfileHeader({ teacher }: { teacher: TeacherProfile }) {
 					<div className='grid min-w-0 gap-3 sm:grid-cols-3'>
 						<Stat
 							label='Заработок за месяц'
-							value={teacher.monthEarnings}
+							value='—'
 							tone='accent'
 						/>
-						<Stat
-							label='Занятий в месяце'
-							value={String(teacher.lessonsThisMonth)}
-						/>
-						<Stat
-							label='Учеников'
-							value={String(teacher.students.length)}
-						/>
+						<Stat label='Занятий в месяце' value='—' />
+						<Stat label='Учеников' value='—' />
 					</div>
 				</div>
 			</div>
@@ -125,29 +130,29 @@ function ProfileHeader({ teacher }: { teacher: TeacherProfile }) {
 	)
 }
 
-function Schedule({ teacher }: { teacher: TeacherProfile }) {
+function Schedule() {
 	return (
 		<SectionCard
 			title='Календарь занятий'
-			description='Дни с занятиями подчеркнуты. Выберите день, чтобы увидеть расписание.'
+			description='Занятия появятся здесь, когда будет готов API расписания.'
 			icon={CalendarDays}
 		>
-			<LessonsCalendar lessons={teacher.lessons} />
+			<LessonsCalendar lessons={lessons} />
 		</SectionCard>
 	)
 }
 
-function Students({ teacher }: { teacher: TeacherProfile }) {
+function Students() {
 	return (
 		<SectionCard
 			title='Ученики'
 			description='Ученики, закрепленные за преподавателем.'
 			icon={GraduationCap}
 		>
-			{teacher.students.length ? (
+			{students.length ? (
 				<>
 					<div className='grid gap-3 md:hidden'>
-						{teacher.students.map(student => (
+						{students.map(student => (
 							<Link
 								key={student.id}
 								href={`/student/${student.id}`}
@@ -178,7 +183,7 @@ function Students({ teacher }: { teacher: TeacherProfile }) {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{teacher.students.map(student => (
+								{students.map(student => (
 									<TableRow key={student.id}>
 										<TableCell className='font-medium text-[#101319]'>
 											<Link
@@ -211,7 +216,7 @@ function Students({ teacher }: { teacher: TeacherProfile }) {
 	)
 }
 
-function Contacts({ teacher }: { teacher: TeacherProfile }) {
+function Contacts({ teacher }: { teacher: TeacherResponse }) {
 	return (
 		<SectionCard
 			title='Контакты'
@@ -239,24 +244,94 @@ function Contacts({ teacher }: { teacher: TeacherProfile }) {
 	)
 }
 
-export default function TeacherProfilePage({
-	teacherId
-}: TeacherProfilePageProps) {
-	const teacher = getTeacherProfile(teacherId)
+function ProfileState({
+	title,
+	description
+}: {
+	title: string
+	description: string
+}) {
+	return (
+		<section className='grid justify-items-start gap-4 rounded-lg border border-[#C9D6CC] bg-[#F7F8F3] p-6'>
+			<div className='flex size-10 items-center justify-center rounded-md bg-[#E4EEE7] text-[#1F5A3D]'>
+				<SearchX className='size-5' aria-hidden />
+			</div>
+			<div>
+				<h1 className='text-lg leading-7 font-semibold text-[#101319]'>
+					{title}
+				</h1>
+				<p className='mt-1 text-sm leading-6 text-[#3D453D]'>
+					{description}
+				</p>
+			</div>
+			<Button
+				variant='outline'
+				size='sm'
+				nativeButton={false}
+				render={<Link href='/teachers' />}
+			>
+				<ArrowLeft className='size-4' aria-hidden />К списку
+			</Button>
+		</section>
+	)
+}
+
+function ProfileSkeleton() {
+	return (
+		<>
+			<Skeleton className='h-80 w-full rounded-lg' />
+			<div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]'>
+				<Skeleton className='h-96 w-full rounded-lg' />
+				<Skeleton className='h-48 w-full rounded-lg' />
+			</div>
+		</>
+	)
+}
+
+function TeacherProfileContent({ teacherId }: TeacherProfilePageProps) {
+	const { data: teacher, isPending, error } = useTeacher(teacherId)
+
+	if (isPending) {
+		return <ProfileSkeleton />
+	}
+
+	if (error || !teacher) {
+		return error?.response?.status === 404 ? (
+			<ProfileState
+				title='Преподаватель не найден'
+				description='Возможно, он был удалён или относится к другой организации.'
+			/>
+		) : (
+			<ProfileState
+				title='Не удалось загрузить профиль'
+				description='Обновите страницу или попробуйте позже.'
+			/>
+		)
+	}
 
 	return (
-		<main className='mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-5 sm:px-6 lg:px-8 lg:py-8'>
+		<>
 			<ProfileHeader teacher={teacher} />
 
 			<div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]'>
 				<div className='grid min-w-0 gap-4'>
-					<Schedule teacher={teacher} />
-					<Students teacher={teacher} />
+					<Schedule />
+					<Students />
 				</div>
 				<div className='grid min-w-0 content-start gap-4'>
 					<Contacts teacher={teacher} />
 				</div>
 			</div>
+		</>
+	)
+}
+
+export default function TeacherProfilePage({
+	teacherId
+}: TeacherProfilePageProps) {
+	return (
+		<main className='mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-5 sm:px-6 lg:px-8 lg:py-8'>
+			<TeacherProfileContent teacherId={teacherId} />
 		</main>
 	)
 }

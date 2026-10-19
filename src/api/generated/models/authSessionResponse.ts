@@ -7,6 +7,7 @@
  */
 import type { AuthSessionResponseSession } from './authSessionResponseSession'
 import type { AuthSessionResponseUser } from './authSessionResponseUser'
+import type { UserOrganization } from './userOrganization'
 
 /**
  * Authenticated user and active session.
@@ -16,4 +17,6 @@ export interface AuthSessionResponse {
 	user: AuthSessionResponseUser
 	/** Active session. */
 	session: AuthSessionResponseSession
+	/** Organizations the user is a member of. When there are several and activeOrganizationId is null, the client should ask the user to choose one. */
+	organizations: UserOrganization[]
 }

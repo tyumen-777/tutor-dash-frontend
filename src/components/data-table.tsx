@@ -28,6 +28,7 @@ interface DataTableProps<TData extends RowData> {
 	searchColumn: string
 	searchPlaceholder: string
 	toolbar?: React.ReactNode
+	emptyMessage?: React.ReactNode
 }
 
 export function DataTable<TData extends RowData>({
@@ -35,7 +36,8 @@ export function DataTable<TData extends RowData>({
 	data,
 	searchColumn,
 	searchPlaceholder,
-	toolbar
+	toolbar,
+	emptyMessage = 'Ничего не найдено.'
 }: DataTableProps<TData>) {
 	const [sorting, setSorting] = React.useState<SortingState>([])
 	const [columnFilters, setColumnFilters] =
@@ -112,7 +114,7 @@ export function DataTable<TData extends RowData>({
 									colSpan={columns.length}
 									className='h-24 text-center'
 								>
-									Ничего не найдено.
+									{emptyMessage}
 								</TableCell>
 							</TableRow>
 						)}
