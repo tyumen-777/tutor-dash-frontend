@@ -1,4 +1,10 @@
+'use client'
+
+import { zodResolver } from '@hookform/resolvers/zod'
+import { isAxiosError } from 'axios'
 import { LockKeyhole, Mail } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -9,7 +15,49 @@ import {
 	CardTitle
 } from '@/components/ui/card'
 
-export function LoginForm() {
+import { useLogin } from '../api/use-login'
+import { type LoginFormValues, loginFormSchema } from '../login-form-schema'
+
+const inputClassName =
+	'h-11 w-full rounded-md border border-[#CAD3C6] bg-[#FBFCF8] pr-3 pl-10 text-sm transition-colors outline-none placeholder:text-[#8A9286] focus:border-[#7E9B88] focus:ring-3 focus:ring-[#7E9B88]/20 aria-invalid:border-destructive aria-invalid:focus:ring-destructive/20'
+
+function getLoginErrorMessage(error: unknown) {
+	if (isAxiosError(error)) {
+		if (!error.response) {
+			return 'Не удалось связаться с сервером. Попробуйте позже.'
+		}
+
+		if (error.response.status === 401 || error.response.status === 400) {
+			return 'Неверная почта или пароль.'
+		}
+	}
+
+	return 'Не удалось войти. Попробуйте еще раз.'
+}
+
+export function LoginForm({ redirectTo }: { redirectTo: string }) {
+	const router = useRouter()
+	const login = useLogin()
+	const form = useForm<LoginFormValues>({
+		resolver: zodResolver(loginFormSchema),
+		defaultValues: { email: '', password: '' }
+	})
+	const { errors } = form.formState
+
+	function handleValidSubmit(values: LoginFormValues) {
+		login.mutate(
+			{ data: values },
+			{
+				onSuccess: () => {
+					router.replace(redirectTo)
+					router.refresh()
+				}
+			}
+		)
+	}
+
+	const isPending = login.isPending || login.isSuccess
+
 	return (
 		<Card className='gap-7 rounded-md border-[#D8DED2] bg-white py-5 shadow-[0_16px_60px_rgba(16,19,25,0.08)] ring-0 sm:py-7'>
 			<CardHeader className='px-5 sm:px-7'>
@@ -22,7 +70,20 @@ export function LoginForm() {
 			</CardHeader>
 
 			<CardContent className='px-5 sm:px-7'>
-				<form className='space-y-5'>
+				<form
+					className='space-y-5'
+					onSubmit={form.handleSubmit(handleValidSubmit)}
+					noValidate
+				>
+					{login.isError && (
+						<p
+							role='alert'
+							className='border-destructive/30 bg-destructive/5 text-destructive rounded-md border px-3 py-2.5 text-sm'
+						>
+							{getLoginErrorMessage(login.error)}
+						</p>
+					)}
+
 					<div className='space-y-2'>
 						<label
 							className='text-sm leading-none font-medium'
@@ -36,15 +97,26 @@ export function LoginForm() {
 								aria-hidden='true'
 							/>
 							<input
+								{...form.register('email')}
 								id='email'
-								name='email'
 								type='email'
 								autoComplete='email'
-								required
 								placeholder='teacher@example.com'
-								className='h-11 w-full rounded-md border border-[#CAD3C6] bg-[#FBFCF8] pr-3 pl-10 text-sm transition-colors outline-none placeholder:text-[#8A9286] focus:border-[#7E9B88] focus:ring-3 focus:ring-[#7E9B88]/20'
+								aria-invalid={Boolean(errors.email)}
+								aria-describedby={
+									errors.email ? 'email-error' : undefined
+								}
+								className={inputClassName}
 							/>
 						</div>
+						{errors.email && (
+							<p
+								id='email-error'
+								className='text-destructive text-sm'
+							>
+								{errors.email.message}
+							</p>
+						)}
 					</div>
 
 					<div className='space-y-2'>
@@ -68,22 +140,36 @@ export function LoginForm() {
 								aria-hidden='true'
 							/>
 							<input
+								{...form.register('password')}
 								id='password'
-								name='password'
 								type='password'
 								autoComplete='current-password'
-								required
 								placeholder='Введите пароль'
-								className='h-11 w-full rounded-md border border-[#CAD3C6] bg-[#FBFCF8] pr-3 pl-10 text-sm transition-colors outline-none placeholder:text-[#8A9286] focus:border-[#7E9B88] focus:ring-3 focus:ring-[#7E9B88]/20'
+								aria-invalid={Boolean(errors.password)}
+								aria-describedby={
+									errors.password
+										? 'password-error'
+										: undefined
+								}
+								className={inputClassName}
 							/>
 						</div>
+						{errors.password && (
+							<p
+								id='password-error'
+								className='text-destructive text-sm'
+							>
+								{errors.password.message}
+							</p>
+						)}
 					</div>
 
 					<Button
 						type='submit'
+						disabled={isPending}
 						className='h-11 w-full rounded-md bg-[#101319] text-sm font-semibold text-white hover:bg-[#30343B]'
 					>
-						Войти
+						{isPending ? 'Входим…' : 'Войти'}
 					</Button>
 				</form>
 			</CardContent>

@@ -20,7 +20,16 @@ export function proxy(request: NextRequest) {
 	)
 
 	if (!hasSessionCookie) {
-		return NextResponse.redirect(new URL(LOGIN_PATH, request.nextUrl))
+		const loginUrl = new URL(LOGIN_PATH, request.nextUrl)
+
+		if (pathname !== '/') {
+			loginUrl.searchParams.set(
+				'from',
+				`${pathname}${request.nextUrl.search}`
+			)
+		}
+
+		return NextResponse.redirect(loginUrl)
 	}
 
 	return NextResponse.next()
