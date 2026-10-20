@@ -7,6 +7,7 @@
  */
 
 export * from './acceptInvitationRequest'
+export * from './archiveTeacherRequest'
 export * from './authSessionResponse'
 export * from './authSessionResponseSession'
 export * from './authSessionResponseUser'

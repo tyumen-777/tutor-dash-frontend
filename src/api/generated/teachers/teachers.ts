@@ -24,6 +24,7 @@ import type {
 import { apiRequest } from '../../api-client'
 import type { BodyType, ErrorType } from '../../api-client'
 import type {
+	ArchiveTeacherRequest,
 	CreateTeacherRequest,
 	TeacherListResponse,
 	TeacherResponse
@@ -50,7 +51,7 @@ const withQueryKey = <T extends object, K>(
 }
 
 /**
- * Возвращает учителей активной организации с поиском, фильтром по статусу и пагинацией. Сортировка по ФИО.
+ * Возвращает учителей активной организации с поиском, фильтром по статусу (активные, архив, все) и пагинацией. Сортировка по ФИО.
  * @summary Список учителей
  */
 export const teachersControllerListTeachers = (
@@ -228,7 +229,7 @@ export const getTeachersControllerCreateTeacherMutationKey = () =>
 	['teachersControllerCreateTeacher'] as const
 
 export const getTeachersControllerCreateTeacherMutationOptions = <
-	TError = ErrorType<unknown>,
+	TError = ErrorType<void>,
 	TContext = unknown
 >(options?: {
 	mutation?: UseMutationOptions<
@@ -270,7 +271,7 @@ export type TeachersControllerCreateTeacherMutationResult = NonNullable<
 >
 export type TeachersControllerCreateTeacherMutationBody =
 	BodyType<CreateTeacherRequest>
-export type TeachersControllerCreateTeacherMutationError = ErrorType<unknown>
+export type TeachersControllerCreateTeacherMutationError = ErrorType<void>
 export type TeachersControllerCreateTeacherMutationVariables = {
 	data: BodyType<CreateTeacherRequest>
 }
@@ -279,7 +280,7 @@ export type TeachersControllerCreateTeacherMutationVariables = {
  * @summary Добавление учителя
  */
 export const useTeachersControllerCreateTeacher = <
-	TError = ErrorType<unknown>,
+	TError = ErrorType<void>,
 	TContext = unknown
 >(
 	options?: {
@@ -471,4 +472,289 @@ export function useTeachersControllerGetTeacher<
 	> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 	return withQueryKey(query, queryOptions.queryKey)
+}
+
+/**
+ * Физически удаляет учителя, созданного по ошибке. Учителя, у которого есть занятия или шаблоны расписания, удалить нельзя: его нужно перевести в архив.
+ * @summary Удаление учителя
+ */
+export const teachersControllerDeleteTeacher = (
+	id: string,
+	options?: SecondParameter<typeof apiRequest>,
+	signal?: AbortSignal
+) => {
+	return apiRequest<void>(
+		{ url: `/teachers/${id}`, method: 'DELETE', signal },
+		options
+	)
+}
+
+export const getTeachersControllerDeleteTeacherMutationKey = () =>
+	['teachersControllerDeleteTeacher'] as const
+
+export const getTeachersControllerDeleteTeacherMutationOptions = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(options?: {
+	mutation?: UseMutationOptions<
+		Awaited<ReturnType<typeof teachersControllerDeleteTeacher>>,
+		TError,
+		TeachersControllerDeleteTeacherMutationVariables,
+		TContext
+	>
+	request?: SecondParameter<typeof apiRequest>
+}): UseMutationOptions<
+	Awaited<ReturnType<typeof teachersControllerDeleteTeacher>>,
+	TError,
+	TeachersControllerDeleteTeacherMutationVariables,
+	TContext
+> => {
+	const mutationKey = getTeachersControllerDeleteTeacherMutationKey()
+	const { mutation: mutationOptions, request: requestOptions } = options
+		? options.mutation &&
+			'mutationKey' in options.mutation &&
+			options.mutation.mutationKey
+			? options
+			: { ...options, mutation: { ...options.mutation, mutationKey } }
+		: { mutation: { mutationKey }, request: undefined }
+
+	const mutationFn: MutationFunction<
+		Awaited<ReturnType<typeof teachersControllerDeleteTeacher>>,
+		TeachersControllerDeleteTeacherMutationVariables
+	> = props => {
+		const { id } = props ?? {}
+
+		return teachersControllerDeleteTeacher(id, requestOptions)
+	}
+
+	return { mutationFn, ...mutationOptions }
+}
+
+export type TeachersControllerDeleteTeacherMutationResult = NonNullable<
+	Awaited<ReturnType<typeof teachersControllerDeleteTeacher>>
+>
+
+export type TeachersControllerDeleteTeacherMutationError = ErrorType<void>
+export type TeachersControllerDeleteTeacherMutationVariables = { id: string }
+
+/**
+ * @summary Удаление учителя
+ */
+export const useTeachersControllerDeleteTeacher = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(
+	options?: {
+		mutation?: UseMutationOptions<
+			Awaited<ReturnType<typeof teachersControllerDeleteTeacher>>,
+			TError,
+			TeachersControllerDeleteTeacherMutationVariables,
+			TContext
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseMutationResult<
+	Awaited<ReturnType<typeof teachersControllerDeleteTeacher>>,
+	TError,
+	TeachersControllerDeleteTeacherMutationVariables,
+	TContext
+> => {
+	return useMutation(
+		getTeachersControllerDeleteTeacherMutationOptions(options),
+		queryClient
+	)
+}
+/**
+ * Увольняет учителя: сохраняет дату увольнения, отменяет его будущие запланированные занятия и закрывает шаблоны расписания текущей датой. Прошедшие занятия остаются в истории.
+ * @summary Перевод учителя в архив
+ */
+export const teachersControllerArchiveTeacher = (
+	id: string,
+	archiveTeacherRequest: BodyType<ArchiveTeacherRequest>,
+	options?: SecondParameter<typeof apiRequest>,
+	signal?: AbortSignal
+) => {
+	return apiRequest<TeacherResponse>(
+		{
+			url: `/teachers/${id}/archive`,
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			data: archiveTeacherRequest,
+			signal
+		},
+		options
+	)
+}
+
+export const getTeachersControllerArchiveTeacherMutationKey = () =>
+	['teachersControllerArchiveTeacher'] as const
+
+export const getTeachersControllerArchiveTeacherMutationOptions = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(options?: {
+	mutation?: UseMutationOptions<
+		Awaited<ReturnType<typeof teachersControllerArchiveTeacher>>,
+		TError,
+		TeachersControllerArchiveTeacherMutationVariables,
+		TContext
+	>
+	request?: SecondParameter<typeof apiRequest>
+}): UseMutationOptions<
+	Awaited<ReturnType<typeof teachersControllerArchiveTeacher>>,
+	TError,
+	TeachersControllerArchiveTeacherMutationVariables,
+	TContext
+> => {
+	const mutationKey = getTeachersControllerArchiveTeacherMutationKey()
+	const { mutation: mutationOptions, request: requestOptions } = options
+		? options.mutation &&
+			'mutationKey' in options.mutation &&
+			options.mutation.mutationKey
+			? options
+			: { ...options, mutation: { ...options.mutation, mutationKey } }
+		: { mutation: { mutationKey }, request: undefined }
+
+	const mutationFn: MutationFunction<
+		Awaited<ReturnType<typeof teachersControllerArchiveTeacher>>,
+		TeachersControllerArchiveTeacherMutationVariables
+	> = props => {
+		const { id, data } = props ?? {}
+
+		return teachersControllerArchiveTeacher(id, data, requestOptions)
+	}
+
+	return { mutationFn, ...mutationOptions }
+}
+
+export type TeachersControllerArchiveTeacherMutationResult = NonNullable<
+	Awaited<ReturnType<typeof teachersControllerArchiveTeacher>>
+>
+export type TeachersControllerArchiveTeacherMutationBody =
+	BodyType<ArchiveTeacherRequest>
+export type TeachersControllerArchiveTeacherMutationError = ErrorType<void>
+export type TeachersControllerArchiveTeacherMutationVariables = {
+	id: string
+	data: BodyType<ArchiveTeacherRequest>
+}
+
+/**
+ * @summary Перевод учителя в архив
+ */
+export const useTeachersControllerArchiveTeacher = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(
+	options?: {
+		mutation?: UseMutationOptions<
+			Awaited<ReturnType<typeof teachersControllerArchiveTeacher>>,
+			TError,
+			TeachersControllerArchiveTeacherMutationVariables,
+			TContext
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseMutationResult<
+	Awaited<ReturnType<typeof teachersControllerArchiveTeacher>>,
+	TError,
+	TeachersControllerArchiveTeacherMutationVariables,
+	TContext
+> => {
+	return useMutation(
+		getTeachersControllerArchiveTeacherMutationOptions(options),
+		queryClient
+	)
+}
+/**
+ * Возвращает учителя из архива вместе со всей историей занятий. Расписание нужно составить заново.
+ * @summary Восстановление учителя из архива
+ */
+export const teachersControllerRestoreTeacher = (
+	id: string,
+	options?: SecondParameter<typeof apiRequest>,
+	signal?: AbortSignal
+) => {
+	return apiRequest<TeacherResponse>(
+		{ url: `/teachers/${id}/restore`, method: 'POST', signal },
+		options
+	)
+}
+
+export const getTeachersControllerRestoreTeacherMutationKey = () =>
+	['teachersControllerRestoreTeacher'] as const
+
+export const getTeachersControllerRestoreTeacherMutationOptions = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(options?: {
+	mutation?: UseMutationOptions<
+		Awaited<ReturnType<typeof teachersControllerRestoreTeacher>>,
+		TError,
+		TeachersControllerRestoreTeacherMutationVariables,
+		TContext
+	>
+	request?: SecondParameter<typeof apiRequest>
+}): UseMutationOptions<
+	Awaited<ReturnType<typeof teachersControllerRestoreTeacher>>,
+	TError,
+	TeachersControllerRestoreTeacherMutationVariables,
+	TContext
+> => {
+	const mutationKey = getTeachersControllerRestoreTeacherMutationKey()
+	const { mutation: mutationOptions, request: requestOptions } = options
+		? options.mutation &&
+			'mutationKey' in options.mutation &&
+			options.mutation.mutationKey
+			? options
+			: { ...options, mutation: { ...options.mutation, mutationKey } }
+		: { mutation: { mutationKey }, request: undefined }
+
+	const mutationFn: MutationFunction<
+		Awaited<ReturnType<typeof teachersControllerRestoreTeacher>>,
+		TeachersControllerRestoreTeacherMutationVariables
+	> = props => {
+		const { id } = props ?? {}
+
+		return teachersControllerRestoreTeacher(id, requestOptions)
+	}
+
+	return { mutationFn, ...mutationOptions }
+}
+
+export type TeachersControllerRestoreTeacherMutationResult = NonNullable<
+	Awaited<ReturnType<typeof teachersControllerRestoreTeacher>>
+>
+
+export type TeachersControllerRestoreTeacherMutationError = ErrorType<void>
+export type TeachersControllerRestoreTeacherMutationVariables = { id: string }
+
+/**
+ * @summary Восстановление учителя из архива
+ */
+export const useTeachersControllerRestoreTeacher = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(
+	options?: {
+		mutation?: UseMutationOptions<
+			Awaited<ReturnType<typeof teachersControllerRestoreTeacher>>,
+			TError,
+			TeachersControllerRestoreTeacherMutationVariables,
+			TContext
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseMutationResult<
+	Awaited<ReturnType<typeof teachersControllerRestoreTeacher>>,
+	TError,
+	TeachersControllerRestoreTeacherMutationVariables,
+	TContext
+> => {
+	return useMutation(
+		getTeachersControllerRestoreTeacherMutationOptions(options),
+		queryClient
+	)
 }

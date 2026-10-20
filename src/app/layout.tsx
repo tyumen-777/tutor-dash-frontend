@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { IBM_Plex_Mono } from 'next/font/google'
+import { Toaster } from 'sonner'
 
 import { QueryProvider } from '@/app/providers/query-provider'
 
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
 		>
 			<body className='flex min-h-full flex-col'>
 				<QueryProvider>{children}</QueryProvider>
+				<Toaster position='top-right' richColors closeButton />
 			</body>
 		</html>
 	)

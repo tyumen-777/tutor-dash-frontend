@@ -11,6 +11,6 @@ export function formatHourlyRate(value: string) {
 	return `${rateFormatter.format(Number(value))}/ч`
 }
 
-export function formatStartedOn(value: string) {
+export function formatDate(value: string) {
 	return dayjs(value).locale('ru').format('D MMMM YYYY')
 }

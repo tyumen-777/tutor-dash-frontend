@@ -1,6 +1,7 @@
 'use client'
 
 import {
+	Archive,
 	ArrowLeft,
 	CalendarDays,
 	GraduationCap,
@@ -11,6 +12,7 @@ import {
 	UserRound
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 import {
 	ContactRow,
@@ -34,7 +36,8 @@ import { useTeacher } from './api/use-teacher'
 import { LessonsCalendar } from './lessons-calendar'
 import type { TeacherLesson, TeacherStudent } from './types'
 import type { TeacherResponse } from '@/api/generated/models'
-import { formatHourlyRate, formatStartedOn } from '@/features/teachers/format'
+import { formatDate, formatHourlyRate } from '@/features/teachers/format'
+import { TeacherActions } from '@/features/teachers/teacher-actions'
 
 // TODO: заменить на API, когда появятся эндпоинты занятий, учеников
 // и заработка преподавателя.
@@ -45,7 +48,13 @@ type TeacherProfilePageProps = {
 	teacherId: string
 }
 
-function ProfileHeader({ teacher }: { teacher: TeacherResponse }) {
+function ProfileHeader({
+	teacher,
+	onDeleted
+}: {
+	teacher: TeacherResponse
+	onDeleted: () => void
+}) {
 	return (
 		<section className='overflow-hidden rounded-lg border border-[#C9D6CC] bg-[#F7F8F3]'>
 			<div className='grid gap-0 lg:grid-cols-[minmax(18rem,22rem)_1fr]'>
@@ -93,7 +102,7 @@ function ProfileHeader({ teacher }: { teacher: TeacherResponse }) {
 								Работает с
 							</p>
 							<p className='mt-1 text-sm leading-5 font-medium text-white'>
-								{formatStartedOn(teacher.startedOn)}
+								{formatDate(teacher.startedOn)}
 							</p>
 						</div>
 					</div>
@@ -101,14 +110,34 @@ function ProfileHeader({ teacher }: { teacher: TeacherResponse }) {
 
 				<div className='grid content-between gap-6 p-5 sm:p-6'>
 					<div>
-						<div className='flex flex-wrap items-center gap-2'>
-							{teacher.isActive ? (
-								<Badge variant='success'>Активен</Badge>
-							) : (
-								<Badge variant='outline'>Неактивен</Badge>
-							)}
-							<Badge variant='outline'>ID: {teacher.id}</Badge>
+						<div className='flex flex-wrap items-start justify-between gap-3'>
+							<div className='flex flex-wrap items-center gap-2'>
+								{teacher.isActive ? (
+									<Badge variant='success'>Активен</Badge>
+								) : (
+									<Badge variant='outline'>В архиве</Badge>
+								)}
+								<Badge variant='outline'>
+									ID: {teacher.id}
+								</Badge>
+							</div>
+							<TeacherActions
+								teacher={teacher}
+								variant='profile'
+								onDeleted={onDeleted}
+							/>
 						</div>
+						{!teacher.isActive ? (
+							<div className='mt-4 flex items-center gap-3 rounded-md border border-[#D8DED2] bg-white px-3 py-2 text-sm leading-5 text-[#3D453D]'>
+								<Archive
+									className='size-4 shrink-0 text-[#5D665B]'
+									aria-hidden
+								/>
+								{teacher.endedOn
+									? `В архиве с ${formatDate(teacher.endedOn)}`
+									: 'В архиве'}
+							</div>
+						) : null}
 						<p className='mt-4 max-w-2xl text-sm leading-6 text-[#3D453D]'>
 							Рабочая карточка преподавателя: занятия в календаре,
 							заработок за месяц и ученики в одном месте.
@@ -289,6 +318,7 @@ function ProfileSkeleton() {
 }
 
 function TeacherProfileContent({ teacherId }: TeacherProfilePageProps) {
+	const router = useRouter()
 	const { data: teacher, isPending, error } = useTeacher(teacherId)
 
 	if (isPending) {
@@ -311,7 +341,10 @@ function TeacherProfileContent({ teacherId }: TeacherProfilePageProps) {
 
 	return (
 		<>
-			<ProfileHeader teacher={teacher} />
+			<ProfileHeader
+				teacher={teacher}
+				onDeleted={() => router.replace('/teachers')}
+			/>
 
 			<div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]'>
 				<div className='grid min-w-0 gap-4'>

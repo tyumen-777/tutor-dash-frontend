@@ -16,7 +16,7 @@ export interface ListTeachersQuery {
 	 * @maxLength 200
 	 */
 	search?: string
-	/** Filter by teacher status. */
+	/** Filter by teacher status: active, archived or all. */
 	status?: ListTeachersQueryStatus
 	/**
 	 * Page size.

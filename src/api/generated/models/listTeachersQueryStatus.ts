@@ -7,13 +7,13 @@
  */
 
 /**
- * Filter by teacher status.
+ * Filter by teacher status: active, archived or all.
  */
 export type ListTeachersQueryStatus =
 	(typeof ListTeachersQueryStatus)[keyof typeof ListTeachersQueryStatus]
 
 export const ListTeachersQueryStatus = {
 	active: 'active',
-	inactive: 'inactive',
+	archived: 'archived',
 	all: 'all'
 } as const
