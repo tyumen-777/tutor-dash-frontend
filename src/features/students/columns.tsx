@@ -4,6 +4,7 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { ArrowUpDown, MoreHorizontal } from 'lucide-react'
 import Link from 'next/link'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
 	DropdownMenu,
@@ -16,18 +17,20 @@ import {
 
 import { type DataTableFeatures } from '@/lib/data-table-features'
 
-export type Student = {
-	id: string
-	fullName: string
-	age: number
-	teacher: string
-	level: 'Beginner' | 'Elementary' | 'Pre-Intermediate' | 'Intermediate'
-}
+import {
+	STUDENT_STATUS_BADGE_VARIANTS,
+	STUDENT_STATUS_LABELS,
+	formatAge,
+	getAge,
+	getStudentFullName
+} from './format'
+import type { StudentResponse } from '@/api/generated/models'
 
-const columnHelper = createColumnHelper<DataTableFeatures, Student>()
+const columnHelper = createColumnHelper<DataTableFeatures, StudentResponse>()
 
 export const columns = columnHelper.columns([
-	columnHelper.accessor('fullName', {
+	columnHelper.accessor(getStudentFullName, {
+		id: 'fullName',
 		header: ({ column }) => {
 			return (
 				<Button
@@ -41,17 +44,88 @@ export const columns = columnHelper.columns([
 					<ArrowUpDown className='ml-2 h-4 w-4' />
 				</Button>
 			)
+		},
+		cell: ({ row, getValue }) => (
+			<Link
+				href={`/student/${row.original.id}`}
+				className='font-medium hover:underline'
+			>
+				{getValue()}
+			</Link>
+		)
+	}),
+	columnHelper.accessor('birthDate', {
+		header: 'Возраст',
+		cell: ({ row }) => {
+			const { birthDate } = row.original
+
+			if (!birthDate) {
+				return <span className='text-muted-foreground'>—</span>
+			}
+
+			return formatAge(getAge(birthDate))
 		}
 	}),
-	columnHelper.accessor('age', {
-		header: 'Возраст',
-		cell: ({ row }) => <span>{row.getValue('age')} лет</span>
-	}),
-	columnHelper.accessor('teacher', {
-		header: 'Преподаватель'
+	columnHelper.accessor(student => student.teacher?.fullName ?? '', {
+		id: 'teacher',
+		header: 'Преподаватель',
+		cell: ({ row }) => {
+			const { teacher } = row.original
+
+			if (!teacher) {
+				return <span className='text-muted-foreground'>—</span>
+			}
+
+			return (
+				<Link
+					href={`/teacher/${teacher.id}`}
+					className={
+						teacher.isActive
+							? 'hover:underline'
+							: 'text-muted-foreground hover:underline'
+					}
+				>
+					{teacher.fullName}
+				</Link>
+			)
+		}
 	}),
 	columnHelper.accessor('level', {
-		header: 'Уровень'
+		header: 'Уровень',
+		cell: ({ row }) =>
+			row.original.level ?? (
+				<span className='text-muted-foreground'>—</span>
+			)
+	}),
+	columnHelper.display({
+		id: 'contacts',
+		header: 'Контакты',
+		cell: ({ row }) => {
+			const { phone, email, telegram } = row.original
+			const contacts = [phone, email, telegram && `@${telegram}`].filter(
+				Boolean
+			)
+
+			if (!contacts.length) {
+				return <span className='text-muted-foreground'>—</span>
+			}
+
+			return (
+				<div className='flex flex-col'>
+					{contacts.map(contact => (
+						<span key={contact}>{contact}</span>
+					))}
+				</div>
+			)
+		}
+	}),
+	columnHelper.accessor('status', {
+		header: 'Статус',
+		cell: ({ row }) => (
+			<Badge variant={STUDENT_STATUS_BADGE_VARIANTS[row.original.status]}>
+				{STUDENT_STATUS_LABELS[row.original.status]}
+			</Badge>
+		)
 	}),
 	columnHelper.display({
 		id: 'actions',

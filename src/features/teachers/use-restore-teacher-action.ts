@@ -2,13 +2,13 @@
 
 import { toast } from 'sonner'
 
+import { useRestoreTeacher } from './api/use-teacher-mutations'
 import {
 	UNKNOWN_ERROR_MESSAGE,
 	getCommonErrorMessage,
 	hasMessage,
 	parseApiError
-} from './api/errors'
-import { useRestoreTeacher } from './api/use-teacher-mutations'
+} from '@/api/errors'
 
 function getRestoreErrorMessage(error: unknown, email: string | null) {
 	const apiError = parseApiError(error)

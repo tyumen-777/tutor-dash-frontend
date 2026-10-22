@@ -1,4 +1,6 @@
 export * from './admin/admin'
 export * from './backend-auth/backend-auth'
+export * from './health/health'
 export * from './organization-invitations/organization-invitations'
+export * from './students/students'
 export * from './teachers/teachers'

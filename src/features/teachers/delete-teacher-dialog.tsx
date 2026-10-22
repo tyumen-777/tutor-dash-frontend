@@ -13,12 +13,12 @@ import {
 	DialogTitle
 } from '@/components/ui/dialog'
 
+import { useDeleteTeacher } from './api/use-teacher-mutations'
 import {
 	UNKNOWN_ERROR_MESSAGE,
 	getCommonErrorMessage,
 	parseApiError
-} from './api/errors'
-import { useDeleteTeacher } from './api/use-teacher-mutations'
+} from '@/api/errors'
 import type { TeacherResponse } from '@/api/generated/models'
 
 export function DeleteTeacherDialog({

@@ -1,11 +1,21 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQueryClient } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { Plus, UserRoundPlus } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
+import {
+	Combobox,
+	ComboboxContent,
+	ComboboxEmpty,
+	ComboboxInput,
+	ComboboxItem,
+	ComboboxList
+} from '@/components/ui/combobox'
 import {
 	Dialog,
 	DialogContent,
@@ -32,21 +42,52 @@ import {
 	SelectTrigger,
 	SelectValue
 } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 
+import { useCreateStudent } from './api/use-create-student'
 import {
 	type StudentFormValues,
-	levelOptions,
+	statusOptions,
 	studentFormSchema,
-	teacherOptions
+	toCreateStudentRequest
 } from './student-form-schema'
+import { TIMEZONE_OPTIONS, type TimezoneOption } from './timezones'
+import {
+	type ApiError,
+	UNKNOWN_ERROR_MESSAGE,
+	getCommonErrorMessage,
+	hasMessage,
+	parseApiError
+} from '@/api/errors'
+import { getTeachersControllerListTeachersQueryKey } from '@/api/generated/teachers/teachers'
+import { useTeachers } from '@/features/teachers/api/use-teachers'
 
-const defaultValues: Partial<StudentFormValues> = {
-	fullName: '',
-	teacher: undefined,
-	level: undefined,
+const defaultValues: StudentFormValues = {
+	firstName: '',
+	lastName: '',
+	birthDate: '',
+	status: 'ACTIVE',
+	teacherId: '',
+	level: '',
+	timezone: '',
 	phone: '',
 	email: '',
-	telegram: ''
+	telegram: '',
+	note: ''
+}
+
+const FORM_FIELDS = Object.keys(defaultValues) as (keyof StudentFormValues)[]
+
+/**
+ * Validation errors come as "field: message" strings. Returns the form fields
+ * they point to.
+ */
+function getInvalidFields(error: ApiError) {
+	return error.messages
+		.map(message => message.split(':')[0]?.trim())
+		.filter((field): field is keyof StudentFormValues =>
+			FORM_FIELDS.includes(field as keyof StudentFormValues)
+		)
 }
 
 export function StudentFormDialog() {
@@ -56,18 +97,78 @@ export function StudentFormDialog() {
 		defaultValues,
 		reValidateMode: 'onChange'
 	})
+	const queryClient = useQueryClient()
+	const createStudent = useCreateStudent()
+	const teachers = useTeachers('active')
+	const [formError, setFormError] = useState<string | null>(null)
+
+	const teacherOptions = useMemo(
+		() => [
+			{ value: '', label: 'Без преподавателя' },
+			...(teachers.data?.items ?? []).map(teacher => ({
+				value: teacher.id,
+				label: teacher.fullName
+			}))
+		],
+		[teachers.data]
+	)
 
 	function handleOpenChange(nextOpen: boolean) {
 		setOpen(nextOpen)
 
 		if (!nextOpen) {
 			form.reset(defaultValues)
+			createStudent.reset()
+			setFormError(null)
 		}
 	}
 
-	function handleValidSubmit() {
-		form.reset(defaultValues)
-		setOpen(false)
+	function handleCreateError(error: unknown) {
+		const apiError = parseApiError(error)
+
+		if (apiError.status === 400) {
+			// Преподавателя архивировали или удалили, пока форма была открыта
+			if (
+				hasMessage(apiError, 'Teacher not found') ||
+				hasMessage(apiError, 'Teacher is archived')
+			) {
+				form.setValue('teacherId', '')
+				form.setError('teacherId', {
+					message: 'Преподаватель больше недоступен, выберите другого'
+				})
+				void queryClient.invalidateQueries({
+					queryKey: getTeachersControllerListTeachersQueryKey()
+				})
+				return
+			}
+
+			const fields = getInvalidFields(apiError)
+
+			if (fields.length) {
+				fields.forEach(field =>
+					form.setError(field, { message: 'Некорректное значение' })
+				)
+				return
+			}
+		}
+
+		setFormError(
+			getCommonErrorMessage(apiError) ??
+				(apiError.status === 400
+					? 'Проверьте данные формы'
+					: UNKNOWN_ERROR_MESSAGE)
+		)
+	}
+
+	function handleValidSubmit(values: StudentFormValues) {
+		setFormError(null)
+		createStudent.mutate(
+			{ data: toCreateStudentRequest(values) },
+			{
+				onSuccess: () => handleOpenChange(false),
+				onError: handleCreateError
+			}
+		)
 	}
 
 	return (
@@ -91,8 +192,8 @@ export function StudentFormDialog() {
 							<div className='flex min-w-0 flex-col gap-1'>
 								<DialogTitle>Новый ученик</DialogTitle>
 								<DialogDescription>
-									Заполните основные данные, назначьте
-									преподавателя и добавьте способ связи.
+									Обязательно только имя — остальное можно
+									заполнить позже.
 								</DialogDescription>
 							</div>
 						</div>
@@ -102,9 +203,9 @@ export function StudentFormDialog() {
 						<FieldGroup>
 							<FieldSet>
 								<FieldLegend>Основные данные</FieldLegend>
-								<div className='grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]'>
+								<div className='grid gap-4 sm:grid-cols-2'>
 									<Controller
-										name='fullName'
+										name='firstName'
 										control={form.control}
 										render={({ field, fieldState }) => (
 											<Field
@@ -115,13 +216,13 @@ export function StudentFormDialog() {
 												<FieldLabel
 													htmlFor={field.name}
 												>
-													ФИО
+													Имя
 												</FieldLabel>
 												<Input
 													{...field}
 													id={field.name}
-													placeholder='Анна Смирнова'
-													autoComplete='name'
+													placeholder='Анна'
+													autoComplete='given-name'
 													aria-invalid={
 														fieldState.invalid
 													}
@@ -135,7 +236,7 @@ export function StudentFormDialog() {
 									/>
 
 									<Controller
-										name='age'
+										name='lastName'
 										control={form.control}
 										render={({ field, fieldState }) => (
 											<Field
@@ -146,33 +247,114 @@ export function StudentFormDialog() {
 												<FieldLabel
 													htmlFor={field.name}
 												>
-													Возраст
+													Фамилия
 												</FieldLabel>
 												<Input
+													{...field}
 													id={field.name}
-													name={field.name}
-													ref={field.ref}
-													onBlur={field.onBlur}
-													onChange={event => {
-														const value =
-															event.target.value
-														field.onChange(
-															value === ''
-																? undefined
-																: Number(value)
-														)
-													}}
-													value={field.value ?? ''}
-													type='number'
-													inputMode='numeric'
-													min={3}
-													max={100}
-													placeholder='12'
+													placeholder='Смирнова'
+													autoComplete='family-name'
 													aria-invalid={
 														fieldState.invalid
 													}
 													className='h-10'
 												/>
+												<FieldError
+													errors={[fieldState.error]}
+												/>
+											</Field>
+										)}
+									/>
+
+									<Controller
+										name='birthDate'
+										control={form.control}
+										render={({ field, fieldState }) => (
+											<Field
+												data-invalid={
+													fieldState.invalid
+												}
+											>
+												<FieldLabel
+													htmlFor={field.name}
+												>
+													Дата рождения
+												</FieldLabel>
+												<Input
+													{...field}
+													id={field.name}
+													type='date'
+													min='1900-01-01'
+													max={dayjs().format(
+														'YYYY-MM-DD'
+													)}
+													aria-invalid={
+														fieldState.invalid
+													}
+													className='h-10'
+												/>
+												<FieldError
+													errors={[fieldState.error]}
+												/>
+											</Field>
+										)}
+									/>
+
+									<Controller
+										name='status'
+										control={form.control}
+										render={({ field, fieldState }) => (
+											<Field
+												data-invalid={
+													fieldState.invalid
+												}
+											>
+												<FieldLabel
+													htmlFor={field.name}
+												>
+													Статус
+												</FieldLabel>
+												<Select
+													items={statusOptions}
+													value={field.value}
+													onValueChange={
+														field.onChange
+													}
+												>
+													<SelectTrigger
+														id={field.name}
+														aria-invalid={
+															fieldState.invalid
+														}
+														className='w-full data-[size=default]:h-10'
+													>
+														<SelectValue placeholder='Выберите статус' />
+													</SelectTrigger>
+													<SelectContent
+														alignItemWithTrigger={
+															false
+														}
+													>
+														<SelectGroup>
+															{statusOptions.map(
+																option => (
+																	<SelectItem
+																		key={
+																			option.value
+																		}
+																		value={
+																			option.value
+																		}
+																	>
+																		{
+																			option.label
+																		}
+																	</SelectItem>
+																)
+															)}
+														</SelectGroup>
+													</SelectContent>
+												</Select>
 												<FieldError
 													errors={[fieldState.error]}
 												/>
@@ -186,7 +368,7 @@ export function StudentFormDialog() {
 								<FieldLegend>Обучение</FieldLegend>
 								<div className='grid gap-4 sm:grid-cols-2'>
 									<Controller
-										name='teacher'
+										name='teacherId'
 										control={form.control}
 										render={({ field, fieldState }) => (
 											<Field
@@ -201,9 +383,14 @@ export function StudentFormDialog() {
 												</FieldLabel>
 												<Select
 													items={teacherOptions}
-													value={field.value ?? null}
-													onValueChange={
-														field.onChange
+													value={field.value}
+													onValueChange={value =>
+														field.onChange(
+															value ?? ''
+														)
+													}
+													disabled={
+														teachers.isPending
 													}
 												>
 													<SelectTrigger
@@ -211,9 +398,15 @@ export function StudentFormDialog() {
 														aria-invalid={
 															fieldState.invalid
 														}
-														className='h-10 w-full'
+														className='w-full data-[size=default]:h-10'
 													>
-														<SelectValue placeholder='Выберите преподавателя' />
+														<SelectValue
+															placeholder={
+																teachers.isPending
+																	? 'Загрузка…'
+																	: 'Без преподавателя'
+															}
+														/>
 													</SelectTrigger>
 													<SelectContent
 														alignItemWithTrigger={
@@ -241,7 +434,15 @@ export function StudentFormDialog() {
 													</SelectContent>
 												</Select>
 												<FieldError
-													errors={[fieldState.error]}
+													errors={[
+														fieldState.error ??
+															(teachers.isError
+																? {
+																		message:
+																			'Не удалось загрузить преподавателей'
+																	}
+																: undefined)
+													]}
 												/>
 											</Field>
 										)}
@@ -261,47 +462,92 @@ export function StudentFormDialog() {
 												>
 													Уровень
 												</FieldLabel>
-												<Select
-													items={levelOptions}
-													value={field.value ?? null}
-													onValueChange={
-														field.onChange
+												<Input
+													{...field}
+													id={field.name}
+													placeholder='B1, 7 класс, ОГЭ'
+													maxLength={50}
+													autoComplete='off'
+													aria-invalid={
+														fieldState.invalid
+													}
+													className='h-10'
+												/>
+												<FieldError
+													errors={[fieldState.error]}
+												/>
+											</Field>
+										)}
+									/>
+
+									<Controller
+										name='timezone'
+										control={form.control}
+										render={({ field, fieldState }) => (
+											<Field
+												data-invalid={
+													fieldState.invalid
+												}
+												className='sm:col-span-2'
+											>
+												<FieldLabel
+													htmlFor={field.name}
+												>
+													Часовой пояс
+												</FieldLabel>
+												<Combobox<TimezoneOption>
+													items={TIMEZONE_OPTIONS}
+													value={
+														TIMEZONE_OPTIONS.find(
+															option =>
+																option.value ===
+																field.value
+														) ?? null
+													}
+													onValueChange={option =>
+														field.onChange(
+															option?.value ?? ''
+														)
+													}
+													itemToStringValue={option =>
+														option.value
 													}
 												>
-													<SelectTrigger
+													<ComboboxInput
 														id={field.name}
+														placeholder='Как в организации'
+														showClear={
+															field.value !== ''
+														}
 														aria-invalid={
 															fieldState.invalid
 														}
 														className='h-10 w-full'
-													>
-														<SelectValue placeholder='Выберите уровень' />
-													</SelectTrigger>
-													<SelectContent
-														alignItemWithTrigger={
-															false
-														}
-													>
-														<SelectGroup>
-															{levelOptions.map(
-																option => (
-																	<SelectItem
-																		key={
-																			option.value
-																		}
-																		value={
-																			option.value
-																		}
-																	>
-																		{
-																			option.label
-																		}
-																	</SelectItem>
-																)
+													/>
+													<ComboboxContent>
+														<ComboboxEmpty>
+															Ничего не найдено
+														</ComboboxEmpty>
+														<ComboboxList>
+															{(
+																option: TimezoneOption
+															) => (
+																<ComboboxItem
+																	key={
+																		option.value
+																	}
+																	value={
+																		option
+																	}
+																>
+																	{
+																		option.label
+																	}
+																</ComboboxItem>
 															)}
-														</SelectGroup>
-													</SelectContent>
-												</Select>
+														</ComboboxList>
+													</ComboboxContent>
+												</Combobox>
 												<FieldError
 													errors={[fieldState.error]}
 												/>
@@ -410,8 +656,36 @@ export function StudentFormDialog() {
 									/>
 								</div>
 							</FieldSet>
+
+							<Controller
+								name='note'
+								control={form.control}
+								render={({ field, fieldState }) => (
+									<Field data-invalid={fieldState.invalid}>
+										<FieldLabel htmlFor={field.name}>
+											Заметка
+										</FieldLabel>
+										<Textarea
+											{...field}
+											id={field.name}
+											placeholder='Готовится к ОГЭ по математике'
+											maxLength={2000}
+											aria-invalid={fieldState.invalid}
+										/>
+										<FieldError
+											errors={[fieldState.error]}
+										/>
+									</Field>
+								)}
+							/>
 						</FieldGroup>
 					</div>
+
+					{formError ? (
+						<p role='alert' className='text-destructive text-sm'>
+							{formError}
+						</p>
+					) : null}
 
 					<DialogFooter>
 						<Button
@@ -421,7 +695,14 @@ export function StudentFormDialog() {
 						>
 							Отмена
 						</Button>
-						<Button type='submit'>Добавить ученика</Button>
+						<Button
+							type='submit'
+							disabled={createStudent.isPending}
+						>
+							{createStudent.isPending
+								? 'Сохранение…'
+								: 'Добавить ученика'}
+						</Button>
 					</DialogFooter>
 				</form>
 			</DialogContent>

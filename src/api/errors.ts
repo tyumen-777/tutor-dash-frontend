@@ -38,7 +38,7 @@ export function hasMessage(error: ApiError, text: string) {
 const SELECT_ORGANIZATION_PATH = '/select-organization'
 
 /**
- * Errors shared by every teacher endpoint. Returns the text to show, or null
+ * Errors shared by every organization endpoint. Returns the text to show, or null
  * when the caller should handle the error itself.
  */
 export function getCommonErrorMessage(error: ApiError) {

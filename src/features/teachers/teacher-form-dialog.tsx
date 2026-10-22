@@ -28,12 +28,6 @@ import {
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 
-import {
-	type ApiError,
-	UNKNOWN_ERROR_MESSAGE,
-	getCommonErrorMessage,
-	parseApiError
-} from './api/errors'
 import { useCreateTeacher } from './api/use-create-teacher'
 import {
 	type TeacherFormValues,
@@ -41,6 +35,12 @@ import {
 	toCreateTeacherRequest
 } from './teacher-form-schema'
 import { useRestoreTeacherAction } from './use-restore-teacher-action'
+import {
+	type ApiError,
+	UNKNOWN_ERROR_MESSAGE,
+	getCommonErrorMessage,
+	parseApiError
+} from '@/api/errors'
 
 function getDefaultValues(): Partial<TeacherFormValues> {
 	return {

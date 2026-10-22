@@ -1,45 +1,32 @@
-import { type Student, columns } from './columns'
-import { DataTable } from './data-table'
+'use client'
 
-async function getData(): Promise<Student[]> {
-	return [
-		{
-			id: 'student-001',
-			fullName: 'Анна Смирнова',
-			age: 12,
-			teacher: 'Мария Иванова',
-			level: 'Elementary'
-		},
-		{
-			id: 'student-002',
-			fullName: 'Михаил Кузнецов',
-			age: 15,
-			teacher: 'Алексей Петров',
-			level: 'Pre-Intermediate'
-		},
-		{
-			id: 'student-003',
-			fullName: 'София Орлова',
-			age: 10,
-			teacher: 'Мария Иванова',
-			level: 'Beginner'
-		},
-		{
-			id: 'student-004',
-			fullName: 'Даниил Волков',
-			age: 17,
-			teacher: 'Екатерина Соколова',
-			level: 'Intermediate'
-		}
-	]
-}
+import { DataTable } from '@/components/data-table'
 
-export default async function StudentPage() {
-	const data = await getData()
+import { useStudents } from './api/use-students'
+import { columns } from './columns'
+import { StudentFormDialog } from './student-form-dialog'
+import { useCanManageStudents } from '@/features/auth/api/use-organization-role'
+
+export default function StudentPage() {
+	const canManage = useCanManageStudents()
+	const { data, isPending, isError } = useStudents()
+
+	const emptyMessage = isPending
+		? 'Загрузка учеников…'
+		: isError
+			? 'Не удалось загрузить учеников.'
+			: undefined
 
 	return (
 		<div className='container mx-auto py-10'>
-			<DataTable columns={columns} data={data} />
+			<DataTable
+				columns={columns}
+				data={data?.items ?? []}
+				searchColumn='fullName'
+				searchPlaceholder='Найти по ФИО...'
+				toolbar={canManage ? <StudentFormDialog /> : null}
+				emptyMessage={emptyMessage}
+			/>
 		</div>
 	)
 }

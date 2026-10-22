@@ -2,7 +2,7 @@
 
 import { useQueryClient } from '@tanstack/react-query'
 
-import { parseApiError } from './errors'
+import { parseApiError } from '@/api/errors'
 import type { TeacherResponse } from '@/api/generated/models'
 import {
 	getTeachersControllerGetTeacherQueryKey,

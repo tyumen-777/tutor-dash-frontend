@@ -17,13 +17,13 @@ import {
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 
+import { useArchiveTeacher } from './api/use-teacher-mutations'
 import {
 	UNKNOWN_ERROR_MESSAGE,
 	getCommonErrorMessage,
 	hasMessage,
 	parseApiError
-} from './api/errors'
-import { useArchiveTeacher } from './api/use-teacher-mutations'
+} from '@/api/errors'
 import type { TeacherResponse } from '@/api/generated/models'
 
 function today() {

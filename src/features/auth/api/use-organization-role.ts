@@ -28,3 +28,14 @@ export function useCanManageTeachers() {
 		TEACHER_MANAGER_ROLES.includes(role)
 	)
 }
+
+const STUDENT_MANAGER_ROLES = ['owner', 'admin', 'manager']
+
+/**
+ * Adding students is available to owners, admins and managers.
+ */
+export function useCanManageStudents() {
+	return useOrganizationRoles().some(role =>
+		STUDENT_MANAGER_ROLES.includes(role)
+	)
+}
