@@ -8,12 +8,14 @@ import {
 	Mail,
 	MessageCircle,
 	Phone,
+	Plus,
 	ReceiptText,
 	SearchX,
 	UserRound,
 	UsersRound
 } from 'lucide-react'
 import Link from 'next/link'
+import { useState } from 'react'
 
 import {
 	ContactRow,
@@ -33,13 +35,23 @@ import {
 	TableRow
 } from '@/components/ui/table'
 
+import { formatMoney } from '@/lib/format-money'
+
 import { useStudent } from './api/use-student'
-import type {
-	StudentLesson,
-	StudentPayment,
-	StudentPreferredTime
-} from './types'
+import type { StudentLesson, StudentPreferredTime } from './types'
 import type { StudentResponse } from '@/api/generated/models'
+import { useCanManageFinance } from '@/features/auth/api/use-organization-role'
+import {
+	usePayments,
+	useStudentBalance
+} from '@/features/income/api/use-payments'
+import { PaymentFormDialog } from '@/features/income/payment-form-dialog'
+import {
+	PAYMENT_METHOD_LABELS,
+	PAYMENT_STATUS_BADGE_VARIANTS,
+	PAYMENT_STATUS_LABELS,
+	formatLessons
+} from '@/features/income/payment-options'
 import {
 	STUDENT_STATUS_BADGE_VARIANTS,
 	STUDENT_STATUS_LABELS,
@@ -50,10 +62,9 @@ import {
 import { TIMEZONE_OPTIONS } from '@/features/students/timezones'
 import { formatDate } from '@/features/teachers/format'
 
-// TODO: заменить на API, когда появятся эндпоинты занятий, оплат
+// TODO: заменить на API, когда появятся эндпоинты занятий
 // и предпочтительного времени ученика.
 const lessons: StudentLesson[] = []
-const payments: StudentPayment[] = []
 const preferredTimes: StudentPreferredTime[] = []
 
 function getInitials(fullName: string) {
@@ -183,12 +194,24 @@ function ProfileHeader({ student }: { student: StudentResponse }) {
 
 					<div className='grid min-w-0 gap-3 sm:grid-cols-3'>
 						<Stat label='Следующее занятие' value='—' />
-						<Stat label='Остаток' value='—' tone='accent' />
+						<BalanceStat studentId={student.id} />
 						<Stat label='Посещаемость' value='—' />
 					</div>
 				</div>
 			</div>
 		</section>
+	)
+}
+
+function BalanceStat({ studentId }: { studentId: string }) {
+	const { data: balance } = useStudentBalance(studentId)
+
+	return (
+		<Stat
+			label='Остаток'
+			value={balance ? formatLessons(balance.lessonsLeft) : '—'}
+			tone='accent'
+		/>
 	)
 }
 
@@ -304,13 +327,44 @@ function Lessons() {
 	)
 }
 
-function Payments() {
+function Payments({ studentId }: { studentId: string }) {
+	const canManage = useCanManageFinance()
+	const [dialogOpen, setDialogOpen] = useState(false)
+	const { data: balance } = useStudentBalance(studentId)
+	const { data, isPending, isError } = usePayments({ studentId, limit: 20 })
+	const payments = data?.items ?? []
+
 	return (
 		<SectionCard
 			title='Оплаты занятий'
-			description='Пакеты занятий и текущий платежный статус.'
+			description='Внесённые оплаты и начисленные за них пакеты занятий.'
 			icon={ReceiptText}
 		>
+			<div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
+				<p className='text-sm leading-5 text-[#3D453D]'>
+					{balance ? (
+						<>
+							Начислено {balance.lessonsTotal}, использовано{' '}
+							{balance.lessonsUsed}, осталось{' '}
+							<span className='font-semibold text-[#1F5A3D]'>
+								{balance.lessonsLeft}
+							</span>
+							{balance.lastPaidOn
+								? ` · последняя оплата ${formatDate(balance.lastPaidOn)}`
+								: ''}
+						</>
+					) : (
+						'—'
+					)}
+				</p>
+				{canManage ? (
+					<Button size='sm' onClick={() => setDialogOpen(true)}>
+						<Plus data-icon='inline-start' />
+						Внести оплату
+					</Button>
+				) : null}
+			</div>
+
 			{payments.length ? (
 				<>
 					<div className='grid gap-3 md:hidden'>
@@ -321,23 +375,29 @@ function Payments() {
 							>
 								<div className='flex flex-wrap items-center justify-between gap-2'>
 									<p className='leading-5 font-medium text-[#101319]'>
-										{payment.amount}
+										{formatMoney(
+											payment.amount,
+											payment.currency
+										)}
 									</p>
 									<Badge
 										variant={
-											payment.status === 'Оплачено'
-												? 'success'
-												: 'warning'
+											PAYMENT_STATUS_BADGE_VARIANTS[
+												payment.status
+											]
 										}
 									>
-										{payment.status}
+										{PAYMENT_STATUS_LABELS[payment.status]}
 									</Badge>
 								</div>
 								<p className='mt-2 text-sm leading-5 text-[#3D453D]'>
-									{payment.lessons}
+									{payment.lessonsCount
+										? formatLessons(payment.lessonsCount)
+										: '—'}
+									, {PAYMENT_METHOD_LABELS[payment.method]}
 								</p>
 								<p className='mt-1 text-xs leading-4 text-[#5D665B]'>
-									{payment.date}
+									{formatDate(payment.paidOn)}
 								</p>
 							</div>
 						))}
@@ -350,6 +410,7 @@ function Payments() {
 									<TableHead>Дата</TableHead>
 									<TableHead>Сумма</TableHead>
 									<TableHead>Пакет</TableHead>
+									<TableHead>Способ</TableHead>
 									<TableHead>Статус</TableHead>
 								</TableRow>
 							</TableHeader>
@@ -357,20 +418,41 @@ function Payments() {
 								{payments.map(payment => (
 									<TableRow key={payment.id}>
 										<TableCell className='font-medium text-[#101319]'>
-											{payment.date}
+											{formatDate(payment.paidOn)}
 										</TableCell>
-										<TableCell>{payment.amount}</TableCell>
-										<TableCell>{payment.lessons}</TableCell>
+										<TableCell className='tabular-nums'>
+											{formatMoney(
+												payment.amount,
+												payment.currency
+											)}
+										</TableCell>
+										<TableCell>
+											{payment.lessonsCount
+												? formatLessons(
+														payment.lessonsCount
+													)
+												: '—'}
+										</TableCell>
+										<TableCell>
+											{
+												PAYMENT_METHOD_LABELS[
+													payment.method
+												]
+											}
+										</TableCell>
 										<TableCell>
 											<Badge
 												variant={
-													payment.status ===
-													'Оплачено'
-														? 'success'
-														: 'warning'
+													PAYMENT_STATUS_BADGE_VARIANTS[
+														payment.status
+													]
 												}
 											>
-												{payment.status}
+												{
+													PAYMENT_STATUS_LABELS[
+														payment.status
+													]
+												}
 											</Badge>
 										</TableCell>
 									</TableRow>
@@ -380,8 +462,22 @@ function Payments() {
 					</div>
 				</>
 			) : (
-				<p className='text-sm leading-5 text-[#5D665B]'>—</p>
+				<p className='text-sm leading-5 text-[#5D665B]'>
+					{isPending
+						? 'Загрузка…'
+						: isError
+							? 'Не удалось загрузить оплаты.'
+							: 'Оплат пока нет.'}
+				</p>
 			)}
+
+			{canManage ? (
+				<PaymentFormDialog
+					open={dialogOpen}
+					onOpenChange={setDialogOpen}
+					studentId={studentId}
+				/>
+			) : null}
 		</SectionCard>
 	)
 }
@@ -510,7 +606,7 @@ function StudentProfileContent({ studentId }: StudentProfilePageProps) {
 				<div className='grid min-w-0 gap-4'>
 					<Contacts student={student} />
 					<Lessons />
-					<Payments />
+					<Payments studentId={student.id} />
 				</div>
 				<div className='grid min-w-0 content-start gap-4'>
 					<Notes student={student} />

@@ -119,6 +119,38 @@ export const columns = columnHelper.columns([
 			)
 		}
 	}),
+	columnHelper.accessor('lessonsLeft', {
+		header: ({ column }) => {
+			return (
+				<Button
+					variant='ghost'
+					onClick={() =>
+						column.toggleSorting(column.getIsSorted() === 'asc')
+					}
+					className='-ml-2'
+				>
+					Остаток
+					<ArrowUpDown className='ml-2 h-4 w-4' />
+				</Button>
+			)
+		},
+		cell: ({ row }) => {
+			const { lessonsLeft } = row.original
+
+			// Предупреждаем заранее, пока ещё есть время договориться об оплате
+			return (
+				<span
+					className={
+						lessonsLeft <= 1
+							? 'text-destructive font-medium tabular-nums'
+							: 'tabular-nums'
+					}
+				>
+					{lessonsLeft}
+				</span>
+			)
+		}
+	}),
 	columnHelper.accessor('status', {
 		header: 'Статус',
 		cell: ({ row }) => (

@@ -39,3 +39,15 @@ export function useCanManageStudents() {
 		STUDENT_MANAGER_ROLES.includes(role)
 	)
 }
+
+const FINANCE_MANAGER_ROLES = ['owner', 'admin']
+
+/**
+ * Registering, editing and canceling student payments is limited to owners
+ * and admins.
+ */
+export function useCanManageFinance() {
+	return useOrganizationRoles().some(role =>
+		FINANCE_MANAGER_ROLES.includes(role)
+	)
+}

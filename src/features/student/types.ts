@@ -6,14 +6,6 @@ export type StudentLesson = {
 	result: string
 }
 
-export type StudentPayment = {
-	id: string
-	date: string
-	amount: string
-	lessons: string
-	status: 'Оплачено' | 'Ожидает'
-}
-
 export type StudentPreferredTime = {
 	day: string
 	time: string

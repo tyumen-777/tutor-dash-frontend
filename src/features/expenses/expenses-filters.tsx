@@ -49,7 +49,7 @@ interface ExpensesFiltersProps {
 	canReset: boolean
 }
 
-function PeriodFilter({
+export function PeriodFilter({
 	from,
 	to,
 	onChange

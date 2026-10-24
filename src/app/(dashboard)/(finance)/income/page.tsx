@@ -1,8 +1,14 @@
-export default function IncomePage() {
+import { Suspense } from 'react'
+
+import { Skeleton } from '@/components/ui/skeleton'
+
+import IncomePage from '@/features/income'
+
+export default function Income() {
 	return (
-		<div className='flex h-full w-full flex-col items-center justify-center gap-4'>
-			<h1 className='text-2xl font-semibold'>Income</h1>
-			<p className='text-muted-foreground'>This is the income page.</p>
-		</div>
+		// useSearchParams внутри страницы требует Suspense-границы
+		<Suspense fallback={<Skeleton className='m-10 h-96' />}>
+			<IncomePage />
+		</Suspense>
 	)
 }

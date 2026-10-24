@@ -1,13 +1,9 @@
 import dayjs from 'dayjs'
 
-const currencyFormatter = new Intl.NumberFormat('ru-RU', {
-	style: 'currency',
-	currency: 'RUB',
-	maximumFractionDigits: 2
-})
+import { formatMoney } from '@/lib/format-money'
 
 export function formatCurrency(value: number) {
-	return currencyFormatter.format(value)
+	return formatMoney(value)
 }
 
 export function formatDate(value: string) {

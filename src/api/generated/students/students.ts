@@ -25,6 +25,7 @@ import { apiRequest } from '../../api-client'
 import type { BodyType, ErrorType } from '../../api-client'
 import type {
 	CreateStudentRequest,
+	StudentBalanceResponse,
 	StudentListResponse,
 	StudentResponse
 } from '../models'
@@ -563,4 +564,183 @@ export const useStudentsControllerDeleteStudent = <
 		getStudentsControllerDeleteStudentMutationOptions(options),
 		queryClient
 	)
+}
+/**
+ * Возвращает, сколько занятий начислено по оплаченным пакетам, сколько использовано и сколько осталось, а также дату последней оплаты. Отменённые пакеты не учитываются.
+ * @summary Баланс занятий ученика
+ */
+export const studentsControllerGetStudentBalance = (
+	id: string,
+	options?: SecondParameter<typeof apiRequest>,
+	signal?: AbortSignal
+) => {
+	return apiRequest<StudentBalanceResponse>(
+		{ url: `/students/${id}/balance`, method: 'GET', signal },
+		options
+	)
+}
+
+export const getStudentsControllerGetStudentBalanceQueryKey = (id: string) => {
+	return [`/students/${id}/balance`] as const
+}
+
+export const getStudentsControllerGetStudentBalanceQueryOptions = <
+	TData = Awaited<ReturnType<typeof studentsControllerGetStudentBalance>>,
+	TError = ErrorType<void>
+>(
+	id: string,
+	options?: {
+		query?: Partial<
+			UseQueryOptions<
+				Awaited<ReturnType<typeof studentsControllerGetStudentBalance>>,
+				TError,
+				TData
+			>
+		>
+		request?: SecondParameter<typeof apiRequest>
+	}
+) => {
+	const { query: queryOptions, request: requestOptions } = options ?? {}
+
+	const queryKey =
+		queryOptions?.queryKey ??
+		getStudentsControllerGetStudentBalanceQueryKey(id)
+
+	const queryFn: QueryFunction<
+		Awaited<ReturnType<typeof studentsControllerGetStudentBalance>>
+	> = ({ signal }) =>
+		studentsControllerGetStudentBalance(id, requestOptions, signal)
+
+	return {
+		queryKey,
+		queryFn,
+		enabled: id !== null && id !== undefined,
+		...queryOptions
+	} as UseQueryOptions<
+		Awaited<ReturnType<typeof studentsControllerGetStudentBalance>>,
+		TError,
+		TData
+	> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type StudentsControllerGetStudentBalanceQueryResult = NonNullable<
+	Awaited<ReturnType<typeof studentsControllerGetStudentBalance>>
+>
+export type StudentsControllerGetStudentBalanceQueryError = ErrorType<void>
+
+export function useStudentsControllerGetStudentBalance<
+	TData = Awaited<ReturnType<typeof studentsControllerGetStudentBalance>>,
+	TError = ErrorType<void>
+>(
+	id: string,
+	options: {
+		query: Partial<
+			UseQueryOptions<
+				Awaited<ReturnType<typeof studentsControllerGetStudentBalance>>,
+				TError,
+				TData
+			>
+		> &
+			Pick<
+				DefinedInitialDataOptions<
+					Awaited<
+						ReturnType<typeof studentsControllerGetStudentBalance>
+					>,
+					TError,
+					Awaited<
+						ReturnType<typeof studentsControllerGetStudentBalance>
+					>
+				>,
+				'initialData'
+			>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): DefinedUseQueryResult<TData, TError> & {
+	queryKey: DataTag<QueryKey, TData, TError>
+}
+export function useStudentsControllerGetStudentBalance<
+	TData = Awaited<ReturnType<typeof studentsControllerGetStudentBalance>>,
+	TError = ErrorType<void>
+>(
+	id: string,
+	options?: {
+		query?: Partial<
+			UseQueryOptions<
+				Awaited<ReturnType<typeof studentsControllerGetStudentBalance>>,
+				TError,
+				TData
+			>
+		> &
+			Pick<
+				UndefinedInitialDataOptions<
+					Awaited<
+						ReturnType<typeof studentsControllerGetStudentBalance>
+					>,
+					TError,
+					Awaited<
+						ReturnType<typeof studentsControllerGetStudentBalance>
+					>
+				>,
+				'initialData'
+			>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseQueryResult<TData, TError> & {
+	queryKey: DataTag<QueryKey, TData, TError>
+}
+export function useStudentsControllerGetStudentBalance<
+	TData = Awaited<ReturnType<typeof studentsControllerGetStudentBalance>>,
+	TError = ErrorType<void>
+>(
+	id: string,
+	options?: {
+		query?: Partial<
+			UseQueryOptions<
+				Awaited<ReturnType<typeof studentsControllerGetStudentBalance>>,
+				TError,
+				TData
+			>
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseQueryResult<TData, TError> & {
+	queryKey: DataTag<QueryKey, TData, TError>
+}
+/**
+ * @summary Баланс занятий ученика
+ */
+
+export function useStudentsControllerGetStudentBalance<
+	TData = Awaited<ReturnType<typeof studentsControllerGetStudentBalance>>,
+	TError = ErrorType<void>
+>(
+	id: string,
+	options?: {
+		query?: Partial<
+			UseQueryOptions<
+				Awaited<ReturnType<typeof studentsControllerGetStudentBalance>>,
+				TError,
+				TData
+			>
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseQueryResult<TData, TError> & {
+	queryKey: DataTag<QueryKey, TData, TError>
+} {
+	const queryOptions = getStudentsControllerGetStudentBalanceQueryOptions(
+		id,
+		options
+	)
+
+	const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+		TData,
+		TError
+	> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+	return withQueryKey(query, queryOptions.queryKey)
 }
