@@ -18,4 +18,8 @@ export interface UserOrganization {
 	slug: string
 	/** Role of the user in the organization. */
 	role: string
+	/** IANA timezone of the organization. Lesson times and reporting periods are shown in it. */
+	timezone: string
+	/** ISO 4217 currency code of the organization. */
+	currency: string
 }

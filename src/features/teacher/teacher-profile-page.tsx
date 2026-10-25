@@ -1,5 +1,7 @@
 'use client'
 
+import dayjs from 'dayjs'
+import 'dayjs/locale/ru'
 import {
 	Archive,
 	ArrowLeft,
@@ -13,6 +15,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useMemo, useState } from 'react'
 
 import {
 	ContactRow,
@@ -32,17 +35,34 @@ import {
 	TableRow
 } from '@/components/ui/table'
 
+import { formatMoney } from '@/lib/format-money'
+import { schoolToday } from '@/lib/school-time'
+
 import { useTeacher } from './api/use-teacher'
+import {
+	type MonthPeriod,
+	useTeacherLessons,
+	useTeacherStudents
+} from './api/use-teacher-activity'
 import { LessonsCalendar } from './lessons-calendar'
-import type { TeacherLesson, TeacherStudent } from './types'
-import type { TeacherResponse } from '@/api/generated/models'
+import type {
+	LessonListResponse,
+	StudentResponse,
+	TeacherResponse
+} from '@/api/generated/models'
+import { useSchoolTimezone } from '@/features/auth/api/use-organization-role'
+import { getStudentFullName } from '@/features/students/format'
 import { formatDate, formatHourlyRate } from '@/features/teachers/format'
 import { TeacherActions } from '@/features/teachers/teacher-actions'
 
-// TODO: заменить на API, когда появятся эндпоинты занятий, учеников
-// и заработка преподавателя.
-const lessons: TeacherLesson[] = []
-const students: TeacherStudent[] = []
+function getMonthPeriod(month: Date): MonthPeriod {
+	const start = dayjs(month).startOf('month')
+
+	return {
+		from: start.format('YYYY-MM-DD'),
+		to: start.endOf('month').format('YYYY-MM-DD')
+	}
+}
 
 type TeacherProfilePageProps = {
 	teacherId: string
@@ -50,11 +70,20 @@ type TeacherProfilePageProps = {
 
 function ProfileHeader({
 	teacher,
+	month,
+	lessons,
+	studentsCount,
 	onDeleted
 }: {
 	teacher: TeacherResponse
+	month: Date
+	lessons: LessonListResponse | undefined
+	studentsCount: number | undefined
 	onDeleted: () => void
 }) {
+	const monthLabel = dayjs(month).locale('ru').format('MMMM')
+	const summary = lessons?.summary
+
 	return (
 		<section className='overflow-hidden rounded-lg border border-[#C9D6CC] bg-[#F7F8F3]'>
 			<div className='grid gap-0 lg:grid-cols-[minmax(18rem,22rem)_1fr]'>
@@ -141,17 +170,35 @@ function ProfileHeader({
 						<p className='mt-4 max-w-2xl text-sm leading-6 text-[#3D453D]'>
 							Рабочая карточка преподавателя: занятия в календаре,
 							заработок за месяц и ученики в одном месте.
+							Заработок считается по проведённым занятиям.
 						</p>
 					</div>
 
 					<div className='grid min-w-0 gap-3 sm:grid-cols-3'>
 						<Stat
-							label='Заработок за месяц'
-							value='—'
+							label={`Заработок · ${monthLabel}`}
+							value={
+								summary
+									? formatMoney(
+											summary.teacherPayTotal,
+											lessons.items[0]?.currency
+										)
+									: '—'
+							}
 							tone='accent'
 						/>
-						<Stat label='Занятий в месяце' value='—' />
-						<Stat label='Учеников' value='—' />
+						<Stat
+							label={`Занятий · ${monthLabel}`}
+							value={summary ? String(summary.lessonsCount) : '—'}
+						/>
+						<Stat
+							label='Учеников'
+							value={
+								studentsCount === undefined
+									? '—'
+									: String(studentsCount)
+							}
+						/>
 					</div>
 				</div>
 			</div>
@@ -159,19 +206,37 @@ function ProfileHeader({
 	)
 }
 
-function Schedule() {
+function Schedule({
+	lessons,
+	timezone,
+	month,
+	onMonthChange,
+	isLoading
+}: {
+	lessons: LessonListResponse | undefined
+	timezone: string
+	month: Date
+	onMonthChange: (month: Date) => void
+	isLoading: boolean
+}) {
 	return (
 		<SectionCard
 			title='Календарь занятий'
-			description='Занятия появятся здесь, когда будет готов API расписания.'
+			description='Проведённые и отменённые занятия по дням. Выберите день, чтобы увидеть занятия и начисления.'
 			icon={CalendarDays}
 		>
-			<LessonsCalendar lessons={lessons} />
+			<LessonsCalendar
+				lessons={lessons?.items ?? []}
+				timezone={timezone}
+				month={month}
+				onMonthChange={onMonthChange}
+				isLoading={isLoading}
+			/>
 		</SectionCard>
 	)
 }
 
-function Students() {
+function Students({ students }: { students: StudentResponse[] }) {
 	return (
 		<SectionCard
 			title='Ученики'
@@ -189,14 +254,16 @@ function Students() {
 							>
 								<div className='flex flex-wrap items-center justify-between gap-2'>
 									<p className='leading-5 font-medium text-[#101319]'>
-										{student.fullName}
+										{getStudentFullName(student)}
 									</p>
-									<Badge variant='outline'>
-										{student.level}
-									</Badge>
+									{student.level ? (
+										<Badge variant='outline'>
+											{student.level}
+										</Badge>
+									) : null}
 								</div>
 								<p className='mt-2 text-xs leading-4 text-[#5D665B]'>
-									Занятий в неделю: {student.lessonsPerWeek}
+									Осталось занятий: {student.lessonsLeft}
 								</p>
 							</Link>
 						))}
@@ -208,7 +275,7 @@ function Students() {
 								<TableRow>
 									<TableHead>ФИО</TableHead>
 									<TableHead>Уровень</TableHead>
-									<TableHead>Занятий в неделю</TableHead>
+									<TableHead>Осталось занятий</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -219,16 +286,20 @@ function Students() {
 												href={`/student/${student.id}`}
 												className='hover:underline'
 											>
-												{student.fullName}
+												{getStudentFullName(student)}
 											</Link>
 										</TableCell>
 										<TableCell>
-											<Badge variant='outline'>
-												{student.level}
-											</Badge>
+											{student.level ? (
+												<Badge variant='outline'>
+													{student.level}
+												</Badge>
+											) : (
+												'—'
+											)}
 										</TableCell>
-										<TableCell>
-											{student.lessonsPerWeek}
+										<TableCell className='tabular-nums'>
+											{student.lessonsLeft}
 										</TableCell>
 									</TableRow>
 								))}
@@ -320,6 +391,14 @@ function ProfileSkeleton() {
 function TeacherProfileContent({ teacherId }: TeacherProfilePageProps) {
 	const router = useRouter()
 	const { data: teacher, isPending, error } = useTeacher(teacherId)
+	const timezone = useSchoolTimezone()
+	// Месяц и дни календаря — по часам школы, как и итоги на бэкенде
+	const [month, setMonth] = useState(() =>
+		dayjs(schoolToday(timezone)).startOf('month').toDate()
+	)
+	const period = useMemo(() => getMonthPeriod(month), [month])
+	const lessons = useTeacherLessons(teacherId, period)
+	const students = useTeacherStudents(teacherId)
 
 	if (isPending) {
 		return <ProfileSkeleton />
@@ -343,13 +422,24 @@ function TeacherProfileContent({ teacherId }: TeacherProfilePageProps) {
 		<>
 			<ProfileHeader
 				teacher={teacher}
+				month={month}
+				lessons={lessons.data}
+				studentsCount={students.data?.total}
 				onDeleted={() => router.replace('/teachers')}
 			/>
 
 			<div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]'>
 				<div className='grid min-w-0 gap-4'>
-					<Schedule />
-					<Students />
+					<Schedule
+						lessons={lessons.data}
+						timezone={timezone}
+						month={month}
+						onMonthChange={next =>
+							setMonth(dayjs(next).startOf('month').toDate())
+						}
+						isLoading={lessons.isPending}
+					/>
+					<Students students={students.data?.items ?? []} />
 				</div>
 				<div className='grid min-w-0 content-start gap-4'>
 					<Contacts teacher={teacher} />

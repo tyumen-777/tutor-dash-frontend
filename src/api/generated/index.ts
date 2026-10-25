@@ -1,6 +1,7 @@
 export * from './admin/admin'
 export * from './backend-auth/backend-auth'
 export * from './health/health'
+export * from './lessons/lessons'
 export * from './organization-invitations/organization-invitations'
 export * from './payments/payments'
 export * from './students/students'
