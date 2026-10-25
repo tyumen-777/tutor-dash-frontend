@@ -3,8 +3,8 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { Plus, UserRoundPlus } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Plus, UserRoundPen, UserRoundPlus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
@@ -45,11 +45,15 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 
 import { useCreateStudent } from './api/use-create-student'
+import { useUpdateStudent } from './api/use-update-student'
 import {
 	type StudentFormValues,
+	hasEditableStatus,
 	statusOptions,
 	studentFormSchema,
-	toCreateStudentRequest
+	toCreateStudentRequest,
+	toStudentFormValues,
+	toUpdateStudentRequest
 } from './student-form-schema'
 import { TIMEZONE_OPTIONS, type TimezoneOption } from './timezones'
 import {
@@ -59,6 +63,7 @@ import {
 	hasMessage,
 	parseApiError
 } from '@/api/errors'
+import type { StudentResponse } from '@/api/generated/models'
 import { getTeachersControllerListTeachersQueryKey } from '@/api/generated/teachers/teachers'
 import { useTeachers } from '@/features/teachers/api/use-teachers'
 
@@ -90,41 +95,100 @@ function getInvalidFields(error: ApiError) {
 		)
 }
 
-export function StudentFormDialog() {
-	const [open, setOpen] = useState(false)
+type StudentFormDialogProps =
+	| { student?: undefined; open?: undefined; onOpenChange?: undefined }
+	| {
+			student: StudentResponse
+			open: boolean
+			onOpenChange: (open: boolean) => void
+	  }
+
+/**
+ * Adds a student (with its own trigger button) or, when `student` is passed,
+ * edits it in a dialog controlled by the caller.
+ */
+export function StudentFormDialog({
+	student,
+	open: controlledOpen,
+	onOpenChange
+}: StudentFormDialogProps) {
+	const isEdit = !!student
+	const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
+	const open = controlledOpen ?? uncontrolledOpen
+	const initialValues = useMemo(
+		() => (student ? toStudentFormValues(student) : defaultValues),
+		[student]
+	)
 	const form = useForm<StudentFormValues>({
 		resolver: zodResolver(studentFormSchema),
-		defaultValues,
+		defaultValues: initialValues,
 		reValidateMode: 'onChange'
 	})
 	const queryClient = useQueryClient()
 	const createStudent = useCreateStudent()
+	const updateStudent = useUpdateStudent()
+	const mutation = isEdit ? updateStudent : createStudent
 	const teachers = useTeachers('active')
 	const [formError, setFormError] = useState<string | null>(null)
+	const canEditStatus = !student || hasEditableStatus(student)
 
-	const teacherOptions = useMemo(
-		() => [
+	// Форма редактирования заполняется актуальными данными при каждом открытии
+	useEffect(() => {
+		if (open) form.reset(initialValues)
+	}, [open, initialValues, form])
+
+	const teacherOptions = useMemo(() => {
+		const options = [
 			{ value: '', label: 'Без преподавателя' },
 			...(teachers.data?.items ?? []).map(teacher => ({
 				value: teacher.id,
 				label: teacher.fullName
 			}))
-		],
-		[teachers.data]
-	)
+		]
+		const currentTeacher = student?.teacher
+
+		// Архивный преподаватель остаётся у ученика, пока его не сменят
+		if (
+			currentTeacher &&
+			!options.some(option => option.value === currentTeacher.id)
+		) {
+			options.push({
+				value: currentTeacher.id,
+				label: currentTeacher.isActive
+					? currentTeacher.fullName
+					: `${currentTeacher.fullName} (в архиве)`
+			})
+		}
+
+		return options
+	}, [teachers.data, student?.teacher])
 
 	function handleOpenChange(nextOpen: boolean) {
-		setOpen(nextOpen)
+		if (onOpenChange) {
+			onOpenChange(nextOpen)
+		} else {
+			setUncontrolledOpen(nextOpen)
+		}
 
 		if (!nextOpen) {
-			form.reset(defaultValues)
-			createStudent.reset()
+			form.reset(initialValues)
+			mutation.reset()
 			setFormError(null)
 		}
 	}
 
-	function handleCreateError(error: unknown) {
+	function handleSubmitError(error: unknown) {
 		const apiError = parseApiError(error)
+
+		if (isEdit && apiError.status === 404) {
+			setFormError('Ученик не найден — возможно, его удалили')
+			return
+		}
+
+		if (isEdit && apiError.status === 409) {
+			setFormError('Статус этого ученика сейчас изменить нельзя')
+			return
+		}
 
 		if (apiError.status === 400) {
 			// Преподавателя архивировали или удалили, пока форма была открыта
@@ -161,22 +225,37 @@ export function StudentFormDialog() {
 	}
 
 	function handleValidSubmit(values: StudentFormValues) {
+		const options = {
+			onSuccess: () => handleOpenChange(false),
+			onError: handleSubmitError
+		}
+
 		setFormError(null)
-		createStudent.mutate(
-			{ data: toCreateStudentRequest(values) },
-			{
-				onSuccess: () => handleOpenChange(false),
-				onError: handleCreateError
-			}
-		)
+
+		if (student) {
+			updateStudent.mutate(
+				{
+					id: student.id,
+					data: toUpdateStudentRequest(values, student)
+				},
+				options
+			)
+		} else {
+			createStudent.mutate(
+				{ data: toCreateStudentRequest(values) },
+				options
+			)
+		}
 	}
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogTrigger render={<Button size='lg' />}>
-				<Plus data-icon='inline-start' />
-				Добавить ученика
-			</DialogTrigger>
+			{isEdit ? null : (
+				<DialogTrigger render={<Button size='lg' />}>
+					<Plus data-icon='inline-start' />
+					Добавить ученика
+				</DialogTrigger>
+			)}
 
 			<DialogContent className='max-h-[calc(100svh-2rem)] overflow-hidden sm:max-w-2xl'>
 				<form
@@ -187,13 +266,22 @@ export function StudentFormDialog() {
 					<DialogHeader className='pr-8'>
 						<div className='flex items-start gap-3'>
 							<div className='bg-muted flex size-9 shrink-0 items-center justify-center rounded-lg'>
-								<UserRoundPlus aria-hidden='true' />
+								{isEdit ? (
+									<UserRoundPen aria-hidden='true' />
+								) : (
+									<UserRoundPlus aria-hidden='true' />
+								)}
 							</div>
 							<div className='flex min-w-0 flex-col gap-1'>
-								<DialogTitle>Новый ученик</DialogTitle>
+								<DialogTitle>
+									{isEdit
+										? 'Редактирование ученика'
+										: 'Новый ученик'}
+								</DialogTitle>
 								<DialogDescription>
-									Обязательно только имя — остальное можно
-									заполнить позже.
+									{isEdit
+										? 'Очистите поле, чтобы удалить значение. Обязательно только имя.'
+										: 'Обязательно только имя — остальное можно заполнить позже.'}
 								</DialogDescription>
 							</div>
 						</div>
@@ -300,67 +388,71 @@ export function StudentFormDialog() {
 										)}
 									/>
 
-									<Controller
-										name='status'
-										control={form.control}
-										render={({ field, fieldState }) => (
-											<Field
-												data-invalid={
-													fieldState.invalid
-												}
-											>
-												<FieldLabel
-													htmlFor={field.name}
-												>
-													Статус
-												</FieldLabel>
-												<Select
-													items={statusOptions}
-													value={field.value}
-													onValueChange={
-														field.onChange
+									{canEditStatus ? (
+										<Controller
+											name='status'
+											control={form.control}
+											render={({ field, fieldState }) => (
+												<Field
+													data-invalid={
+														fieldState.invalid
 													}
 												>
-													<SelectTrigger
-														id={field.name}
-														aria-invalid={
-															fieldState.invalid
-														}
-														className='w-full data-[size=default]:h-10'
+													<FieldLabel
+														htmlFor={field.name}
 													>
-														<SelectValue placeholder='Выберите статус' />
-													</SelectTrigger>
-													<SelectContent
-														alignItemWithTrigger={
-															false
+														Статус
+													</FieldLabel>
+													<Select
+														items={statusOptions}
+														value={field.value}
+														onValueChange={
+															field.onChange
 														}
 													>
-														<SelectGroup>
-															{statusOptions.map(
-																option => (
-																	<SelectItem
-																		key={
-																			option.value
-																		}
-																		value={
-																			option.value
-																		}
-																	>
-																		{
-																			option.label
-																		}
-																	</SelectItem>
-																)
-															)}
-														</SelectGroup>
-													</SelectContent>
-												</Select>
-												<FieldError
-													errors={[fieldState.error]}
-												/>
-											</Field>
-										)}
-									/>
+														<SelectTrigger
+															id={field.name}
+															aria-invalid={
+																fieldState.invalid
+															}
+															className='w-full data-[size=default]:h-10'
+														>
+															<SelectValue placeholder='Выберите статус' />
+														</SelectTrigger>
+														<SelectContent
+															alignItemWithTrigger={
+																false
+															}
+														>
+															<SelectGroup>
+																{statusOptions.map(
+																	option => (
+																		<SelectItem
+																			key={
+																				option.value
+																			}
+																			value={
+																				option.value
+																			}
+																		>
+																			{
+																				option.label
+																			}
+																		</SelectItem>
+																	)
+																)}
+															</SelectGroup>
+														</SelectContent>
+													</Select>
+													<FieldError
+														errors={[
+															fieldState.error
+														]}
+													/>
+												</Field>
+											)}
+										/>
+									) : null}
 								</div>
 							</FieldSet>
 
@@ -695,13 +787,12 @@ export function StudentFormDialog() {
 						>
 							Отмена
 						</Button>
-						<Button
-							type='submit'
-							disabled={createStudent.isPending}
-						>
-							{createStudent.isPending
+						<Button type='submit' disabled={mutation.isPending}>
+							{mutation.isPending
 								? 'Сохранение…'
-								: 'Добавить ученика'}
+								: isEdit
+									? 'Сохранить'
+									: 'Добавить ученика'}
 						</Button>
 					</DialogFooter>
 				</form>

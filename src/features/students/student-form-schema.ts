@@ -3,7 +3,9 @@ import { z } from 'zod'
 
 import {
 	type CreateStudentRequest,
-	CreateStudentRequestStatus
+	CreateStudentRequestStatus,
+	type StudentResponse,
+	type UpdateStudentRequest
 } from '@/api/generated/models'
 
 export const statusOptions = [
@@ -98,5 +100,59 @@ export function toCreateStudentRequest(
 		email: emptyToUndefined(values.email),
 		telegram: emptyToUndefined(values.telegram),
 		note: emptyToUndefined(values.note)
+	}
+}
+
+/**
+ * Only a lead or an active student can be switched in the form; pausing and
+ * archiving are separate actions.
+ */
+export function hasEditableStatus(student: StudentResponse) {
+	return (
+		student.status === CreateStudentRequestStatus.LEAD ||
+		student.status === CreateStudentRequestStatus.ACTIVE
+	)
+}
+
+export function toStudentFormValues(
+	student: StudentResponse
+): StudentFormValues {
+	return {
+		firstName: student.firstName,
+		lastName: student.lastName ?? '',
+		birthDate: student.birthDate ?? '',
+		status: hasEditableStatus(student)
+			? (student.status as CreateStudentRequestStatus)
+			: CreateStudentRequestStatus.ACTIVE,
+		teacherId: student.teacher?.id ?? '',
+		level: student.level ?? '',
+		timezone: student.timezone ?? '',
+		phone: student.phone ?? '',
+		email: student.email ?? '',
+		telegram: student.telegram ?? '',
+		note: student.note ?? ''
+	}
+}
+
+function emptyToNull(value: string) {
+	return value === '' ? null : value
+}
+
+export function toUpdateStudentRequest(
+	values: StudentFormValues,
+	student: StudentResponse
+): UpdateStudentRequest {
+	return {
+		firstName: values.firstName,
+		lastName: emptyToNull(values.lastName),
+		birthDate: emptyToNull(values.birthDate),
+		status: hasEditableStatus(student) ? values.status : undefined,
+		teacherId: emptyToNull(values.teacherId),
+		level: emptyToNull(values.level),
+		timezone: emptyToNull(values.timezone),
+		phone: emptyToNull(values.phone),
+		email: emptyToNull(values.email),
+		telegram: emptyToNull(values.telegram),
+		note: emptyToNull(values.note)
 	}
 }

@@ -27,7 +27,8 @@ import type {
 	CreateStudentRequest,
 	StudentBalanceResponse,
 	StudentListResponse,
-	StudentResponse
+	StudentResponse,
+	UpdateStudentRequest
 } from '../models'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -474,6 +475,108 @@ export function useStudentsControllerGetStudent<
 	return withQueryKey(query, queryOptions.queryKey)
 }
 
+/**
+ * Меняет данные ученика: имя, фамилию, контакты, преподавателя, уровень, дату рождения, часовой пояс, статус (лид или активный) и заметку. Пустая строка или null очищает необязательное поле.
+ * @summary Изменение ученика
+ */
+export const studentsControllerUpdateStudent = (
+	id: string,
+	updateStudentRequest: BodyType<UpdateStudentRequest>,
+	options?: SecondParameter<typeof apiRequest>,
+	signal?: AbortSignal
+) => {
+	return apiRequest<StudentResponse>(
+		{
+			url: `/students/${id}`,
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			data: updateStudentRequest,
+			signal
+		},
+		options
+	)
+}
+
+export const getStudentsControllerUpdateStudentMutationKey = () =>
+	['studentsControllerUpdateStudent'] as const
+
+export const getStudentsControllerUpdateStudentMutationOptions = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(options?: {
+	mutation?: UseMutationOptions<
+		Awaited<ReturnType<typeof studentsControllerUpdateStudent>>,
+		TError,
+		StudentsControllerUpdateStudentMutationVariables,
+		TContext
+	>
+	request?: SecondParameter<typeof apiRequest>
+}): UseMutationOptions<
+	Awaited<ReturnType<typeof studentsControllerUpdateStudent>>,
+	TError,
+	StudentsControllerUpdateStudentMutationVariables,
+	TContext
+> => {
+	const mutationKey = getStudentsControllerUpdateStudentMutationKey()
+	const { mutation: mutationOptions, request: requestOptions } = options
+		? options.mutation &&
+			'mutationKey' in options.mutation &&
+			options.mutation.mutationKey
+			? options
+			: { ...options, mutation: { ...options.mutation, mutationKey } }
+		: { mutation: { mutationKey }, request: undefined }
+
+	const mutationFn: MutationFunction<
+		Awaited<ReturnType<typeof studentsControllerUpdateStudent>>,
+		StudentsControllerUpdateStudentMutationVariables
+	> = props => {
+		const { id, data } = props ?? {}
+
+		return studentsControllerUpdateStudent(id, data, requestOptions)
+	}
+
+	return { mutationFn, ...mutationOptions }
+}
+
+export type StudentsControllerUpdateStudentMutationResult = NonNullable<
+	Awaited<ReturnType<typeof studentsControllerUpdateStudent>>
+>
+export type StudentsControllerUpdateStudentMutationBody =
+	BodyType<UpdateStudentRequest>
+export type StudentsControllerUpdateStudentMutationError = ErrorType<void>
+export type StudentsControllerUpdateStudentMutationVariables = {
+	id: string
+	data: BodyType<UpdateStudentRequest>
+}
+
+/**
+ * @summary Изменение ученика
+ */
+export const useStudentsControllerUpdateStudent = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(
+	options?: {
+		mutation?: UseMutationOptions<
+			Awaited<ReturnType<typeof studentsControllerUpdateStudent>>,
+			TError,
+			StudentsControllerUpdateStudentMutationVariables,
+			TContext
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseMutationResult<
+	Awaited<ReturnType<typeof studentsControllerUpdateStudent>>,
+	TError,
+	StudentsControllerUpdateStudentMutationVariables,
+	TContext
+> => {
+	return useMutation(
+		getStudentsControllerUpdateStudentMutationOptions(options),
+		queryClient
+	)
+}
 /**
  * Физически удаляет ученика, созданного по ошибке, вместе с его шаблонами расписания и связями с родителями. Ученика, у которого есть занятия, абонементы или платежи, удалить нельзя: его нужно перевести в архив.
  * @summary Удаление ученика

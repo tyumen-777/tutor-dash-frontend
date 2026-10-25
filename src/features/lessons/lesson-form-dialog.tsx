@@ -179,6 +179,15 @@ export function LessonFormDialog({
 			})
 			return
 		}
+		if (
+			apiError.status === 409 &&
+			hasMessage(apiError, 'already has a lesson')
+		) {
+			form.setError('time', {
+				message: 'У преподавателя уже есть занятие в это время'
+			})
+			return
+		}
 		if (apiError.status === 400 && hasMessage(apiError, 'Student')) {
 			form.setError('studentId', { message: 'Ученик больше недоступен' })
 			return
