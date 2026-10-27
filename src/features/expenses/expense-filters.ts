@@ -1,13 +1,14 @@
 import dayjs, { type Dayjs } from 'dayjs'
 
-import {
-	type Expense,
-	categoryOptions,
-	statusOptions
-} from './expense-form-schema'
+import { categoryOptions, statusOptions } from './expense-options'
+import type {
+	ExpenseResponseCategory,
+	ExpenseResponseStatus,
+	ListExpensesQuery
+} from '@/api/generated/models'
 
-export type ExpenseCategory = Expense['category']
-export type ExpenseStatus = Expense['status']
+export type ExpenseCategory = ExpenseResponseCategory
+export type ExpenseStatus = ExpenseResponseStatus
 
 export type ExpenseFilters = {
 	from: string
@@ -126,18 +127,18 @@ export function hasActiveFilters(filters: ExpenseFilters) {
 	return serializeExpenseFilters(filters) !== ''
 }
 
-export function applyExpenseFilters(
-	expenses: Expense[],
+export function toListExpensesQuery(
 	filters: ExpenseFilters
-) {
-	return expenses.filter(
-		expense =>
-			expense.date >= filters.from &&
-			expense.date <= filters.to &&
-			(!filters.categories.length ||
-				filters.categories.includes(expense.category)) &&
-			(!filters.status || expense.status === filters.status)
-	)
+): ListExpensesQuery {
+	return {
+		from: filters.from,
+		to: filters.to,
+		category: filters.categories.length
+			? filters.categories.join(',')
+			: undefined,
+		status: filters.status ?? undefined,
+		limit: 100
+	}
 }
 
 const dayMonthFormatter = new Intl.DateTimeFormat('ru-RU', {

@@ -2,22 +2,31 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import dayjs from 'dayjs'
-import { Plus, ReceiptText } from 'lucide-react'
-import { useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { ReceiptText } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Controller, useForm, useWatch } from 'react-hook-form'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import {
+	Combobox,
+	ComboboxContent,
+	ComboboxEmpty,
+	ComboboxInput,
+	ComboboxItem,
+	ComboboxList
+} from '@/components/ui/combobox'
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
 	DialogHeader,
-	DialogTitle,
-	DialogTrigger
+	DialogTitle
 } from '@/components/ui/dialog'
 import {
 	Field,
+	FieldDescription,
 	FieldError,
 	FieldGroup,
 	FieldLabel,
@@ -33,29 +42,29 @@ import {
 	SelectTrigger,
 	SelectValue
 } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 
+import { useCreateExpense, useUpdateExpense } from './api/use-expense-mutations'
 import {
 	type ExpenseFormValues,
-	categoryOptions,
 	expenseFormSchema,
-	paymentMethodOptions,
-	statusOptions
+	getCreateDefaultValues,
+	getEditDefaultValues,
+	toCreateExpenseRequest,
+	toUpdateExpenseRequest
 } from './expense-form-schema'
+import { categoryOptions, editableStatusOptions } from './expense-options'
+import {
+	UNKNOWN_ERROR_MESSAGE,
+	getCommonErrorMessage,
+	hasMessage,
+	parseApiError
+} from '@/api/errors'
+import type { ExpenseResponse } from '@/api/generated/models'
+import { paymentMethodOptions } from '@/features/income/payment-options'
+import { useTeachers } from '@/features/teachers/api/use-teachers'
 
 type Option = { readonly label: string; readonly value: string }
-
-function getDefaultValues(): Partial<ExpenseFormValues> {
-	return {
-		date: dayjs().format('YYYY-MM-DD'),
-		amount: undefined,
-		category: undefined,
-		recipient: '',
-		paymentMethod: undefined,
-		status: 'paid',
-		description: '',
-		comment: ''
-	}
-}
 
 function OptionsSelect({
 	id,
@@ -98,39 +107,120 @@ function OptionsSelect({
 	)
 }
 
+/**
+ * Creates an expense or edits an existing one when `expense` is passed.
+ */
 export function ExpenseFormDialog({
-	onCreate
+	open,
+	onOpenChange,
+	expense
 }: {
-	onCreate: (values: ExpenseFormValues) => void
+	open: boolean
+	onOpenChange: (open: boolean) => void
+	expense?: ExpenseResponse
 }) {
-	const [open, setOpen] = useState(false)
+	const isEdit = !!expense
+	const defaultValues = useMemo(
+		() =>
+			expense ? getEditDefaultValues(expense) : getCreateDefaultValues(),
+		[expense]
+	)
 	const form = useForm<ExpenseFormValues>({
 		resolver: zodResolver(expenseFormSchema),
-		defaultValues: getDefaultValues(),
+		defaultValues,
 		reValidateMode: 'onChange'
 	})
+	const createExpense = useCreateExpense()
+	const updateExpense = useUpdateExpense()
+	const mutation = isEdit ? updateExpense : createExpense
+	const [formError, setFormError] = useState<string | null>(null)
+
+	// Пересобираем форму при каждом открытии: диалог переиспользуется
+	// для разных расходов
+	useEffect(() => {
+		if (open) form.reset(defaultValues)
+	}, [open, defaultValues, form])
+
+	const category = useWatch({ control: form.control, name: 'category' })
+	const teachers = useTeachers('active')
+	const teacherOptions = useMemo<Option[]>(() => {
+		const options = (teachers.data?.items ?? []).map(teacher => ({
+			value: teacher.id,
+			label: teacher.fullName
+		}))
+		const current = expense?.teacher
+
+		// Преподаватель мог уйти в архив после выплаты
+		if (current && !options.some(option => option.value === current.id)) {
+			options.push({ value: current.id, label: current.fullName })
+		}
+
+		return options
+	}, [teachers.data, expense])
 
 	function handleOpenChange(nextOpen: boolean) {
-		setOpen(nextOpen)
+		onOpenChange(nextOpen)
 
 		if (!nextOpen) {
-			form.reset(getDefaultValues())
+			mutation.reset()
+			setFormError(null)
 		}
 	}
 
+	function handleError(error: unknown) {
+		const apiError = parseApiError(error)
+
+		if (
+			apiError.status === 400 &&
+			hasMessage(apiError, 'Teacher not found')
+		) {
+			form.setError('teacherId', {
+				message: 'Преподаватель больше недоступен'
+			})
+			return
+		}
+		if (apiError.status === 400 && hasMessage(apiError, 'spentOn')) {
+			form.setError('spentOn', {
+				message: 'Дата не может быть в будущем'
+			})
+			return
+		}
+		if (apiError.status === 404 || apiError.status === 409) {
+			setFormError('Расход изменился или был отменён. Обновите страницу.')
+			return
+		}
+
+		setFormError(
+			getCommonErrorMessage(apiError) ??
+				(apiError.status === 400
+					? 'Проверьте данные формы'
+					: UNKNOWN_ERROR_MESSAGE)
+		)
+	}
+
 	function handleValidSubmit(values: ExpenseFormValues) {
-		onCreate(values)
-		form.reset(getDefaultValues())
-		setOpen(false)
+		setFormError(null)
+
+		const onSuccess = () => {
+			toast.success(isEdit ? 'Расход изменён' : 'Расход добавлен')
+			handleOpenChange(false)
+		}
+
+		if (expense) {
+			updateExpense.mutate(
+				{ id: expense.id, data: toUpdateExpenseRequest(values) },
+				{ onSuccess, onError: handleError }
+			)
+		} else {
+			createExpense.mutate(
+				{ data: toCreateExpenseRequest(values) },
+				{ onSuccess, onError: handleError }
+			)
+		}
 	}
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogTrigger render={<Button size='lg' />}>
-				<Plus data-icon='inline-start' />
-				Добавить расход
-			</DialogTrigger>
-
 			<DialogContent className='max-h-[calc(100svh-2rem)] overflow-hidden sm:max-w-2xl'>
 				<form
 					className='flex min-h-0 flex-col gap-4'
@@ -143,7 +233,11 @@ export function ExpenseFormDialog({
 								<ReceiptText aria-hidden='true' />
 							</div>
 							<div className='flex min-w-0 flex-col gap-1'>
-								<DialogTitle>Новый расход</DialogTitle>
+								<DialogTitle>
+									{isEdit
+										? 'Изменить расход'
+										: 'Новый расход'}
+								</DialogTitle>
 								<DialogDescription>
 									Укажите сумму, категорию и получателя
 									платежа.
@@ -158,7 +252,7 @@ export function ExpenseFormDialog({
 								<FieldLegend>Основное</FieldLegend>
 								<div className='grid gap-4 sm:grid-cols-2'>
 									<Controller
-										name='date'
+										name='spentOn'
 										control={form.control}
 										render={({ field, fieldState }) => (
 											<Field
@@ -267,6 +361,93 @@ export function ExpenseFormDialog({
 											</Field>
 										)}
 									/>
+
+									{category === 'SALARY' ? (
+										<Controller
+											name='teacherId'
+											control={form.control}
+											render={({ field, fieldState }) => (
+												<Field
+													data-invalid={
+														fieldState.invalid
+													}
+													className='sm:col-span-2'
+												>
+													<FieldLabel
+														htmlFor={field.name}
+													>
+														Преподаватель
+													</FieldLabel>
+													<Combobox<Option>
+														items={teacherOptions}
+														value={
+															teacherOptions.find(
+																option =>
+																	option.value ===
+																	field.value
+															) ?? null
+														}
+														onValueChange={option =>
+															field.onChange(
+																option?.value ??
+																	''
+															)
+														}
+														itemToStringValue={option =>
+															option.value
+														}
+													>
+														<ComboboxInput
+															id={field.name}
+															placeholder={
+																teachers.isPending
+																	? 'Загрузка…'
+																	: 'Найти преподавателя'
+															}
+															aria-invalid={
+																fieldState.invalid
+															}
+															className='h-10 w-full'
+														/>
+														<ComboboxContent>
+															<ComboboxEmpty>
+																Ничего не
+																найдено
+															</ComboboxEmpty>
+															<ComboboxList>
+																{(
+																	option: Option
+																) => (
+																	<ComboboxItem
+																		key={
+																			option.value
+																		}
+																		value={
+																			option
+																		}
+																	>
+																		{
+																			option.label
+																		}
+																	</ComboboxItem>
+																)}
+															</ComboboxList>
+														</ComboboxContent>
+													</Combobox>
+													<FieldDescription>
+														Необязательно. Выплата
+														появится в отчётах по
+														преподавателю.
+													</FieldDescription>
+													<FieldError
+														errors={[
+															fieldState.error
+														]}
+													/>
+												</Field>
+											)}
+										/>
+									) : null}
 								</div>
 							</FieldSet>
 
@@ -306,7 +487,7 @@ export function ExpenseFormDialog({
 									/>
 
 									<Controller
-										name='paymentMethod'
+										name='method'
 										control={form.control}
 										render={({ field, fieldState }) => (
 											<Field
@@ -354,7 +535,9 @@ export function ExpenseFormDialog({
 												</FieldLabel>
 												<OptionsSelect
 													id={field.name}
-													options={statusOptions}
+													options={
+														editableStatusOptions
+													}
 													value={field.value}
 													onValueChange={
 														field.onChange
@@ -419,7 +602,7 @@ export function ExpenseFormDialog({
 												>
 													Комментарий
 												</FieldLabel>
-												<textarea
+												<Textarea
 													{...field}
 													id={field.name}
 													rows={3}
@@ -427,7 +610,6 @@ export function ExpenseFormDialog({
 													aria-invalid={
 														fieldState.invalid
 													}
-													className='border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:bg-input/30 w-full min-w-0 resize-none rounded-lg border bg-transparent px-2.5 py-2 text-base transition-colors outline-none focus-visible:ring-3 aria-invalid:ring-3 md:text-sm'
 												/>
 												<FieldError
 													errors={[fieldState.error]}
@@ -440,6 +622,12 @@ export function ExpenseFormDialog({
 						</FieldGroup>
 					</div>
 
+					{formError ? (
+						<p role='alert' className='text-destructive text-sm'>
+							{formError}
+						</p>
+					) : null}
+
 					<DialogFooter>
 						<Button
 							type='button'
@@ -448,7 +636,13 @@ export function ExpenseFormDialog({
 						>
 							Отмена
 						</Button>
-						<Button type='submit'>Добавить расход</Button>
+						<Button type='submit' disabled={mutation.isPending}>
+							{mutation.isPending
+								? 'Сохранение…'
+								: isEdit
+									? 'Сохранить'
+									: 'Добавить расход'}
+						</Button>
 					</DialogFooter>
 				</form>
 			</DialogContent>

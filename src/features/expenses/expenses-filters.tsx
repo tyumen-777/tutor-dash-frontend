@@ -33,7 +33,7 @@ import {
 	periodPresets,
 	toDateString
 } from './expense-filters'
-import { categoryOptions, statusOptions } from './expense-form-schema'
+import { categoryOptions, statusOptions } from './expense-options'
 
 const ALL_STATUSES = 'all'
 

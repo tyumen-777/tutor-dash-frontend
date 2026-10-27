@@ -50,6 +50,18 @@ export function useCanManageFinance() {
 	)
 }
 
+const EXPENSE_MANAGER_ROLES = ['owner', 'admin', 'accountant']
+
+/**
+ * Registering, editing and canceling school expenses is available to owners,
+ * admins and accountants.
+ */
+export function useCanManageExpenses() {
+	return useOrganizationRoles().some(role =>
+		EXPENSE_MANAGER_ROLES.includes(role)
+	)
+}
+
 const LESSON_MANAGER_ROLES = ['owner', 'admin', 'manager']
 
 /**
