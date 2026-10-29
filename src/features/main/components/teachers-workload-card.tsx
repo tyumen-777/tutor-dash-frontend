@@ -1,4 +1,5 @@
 import { GraduationCap } from 'lucide-react'
+import Link from 'next/link'
 
 import {
 	Card,
@@ -10,8 +11,11 @@ import {
 
 import { cn } from '@/lib/utils'
 
-import type { TeacherLoad } from './data'
+import { formatHours, pluralize } from '../format'
 
+import type { DashboardSummaryResponseTeachersItem } from '@/api/generated/models'
+
+// Загрузка — доля от самого занятого преподавателя: нормы часов в системе нет
 function WorkloadBar({ value }: { value: number }) {
 	return (
 		<div className='h-2 overflow-hidden rounded-full bg-[#E8EEE2]'>
@@ -33,20 +37,25 @@ function WorkloadBar({ value }: { value: number }) {
 export function TeachersWorkloadCard({
 	teachers
 }: {
-	teachers: TeacherLoad[]
+	teachers?: DashboardSummaryResponseTeachersItem[]
 }) {
+	const maxLessons = Math.max(
+		0,
+		...(teachers ?? []).map(teacher => teacher.lessonsCount)
+	)
+
 	return (
 		<Card className='rounded-lg border-[#D8DED2] bg-white shadow-none'>
 			<CardHeader>
 				<CardTitle>Загрузка преподавателей</CardTitle>
 				<CardDescription>
-					Держим баланс между выручкой, качеством и риском выгорания.
+					Проведённые занятия и ученики за текущий месяц.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='space-y-4'>
-				{teachers.map(teacher => (
+				{teachers?.map(teacher => (
 					<div
-						key={teacher.name}
+						key={teacher.id}
 						className='grid gap-3 rounded-md border border-[#D8DED2] p-3 sm:grid-cols-[minmax(0,1fr)_96px_88px]'
 					>
 						<div className='min-w-0 space-y-2'>
@@ -55,26 +64,50 @@ export function TeachersWorkloadCard({
 									className='size-4 shrink-0 text-[#3F7A54]'
 									aria-hidden='true'
 								/>
-								<p className='truncate text-sm font-semibold'>
-									{teacher.name}
-								</p>
+								<Link
+									href={`/teacher/${teacher.id}`}
+									className='truncate text-sm font-semibold hover:underline'
+								>
+									{teacher.fullName}
+								</Link>
 							</div>
-							<WorkloadBar value={teacher.load} />
+							<WorkloadBar
+								value={
+									maxLessons
+										? (teacher.lessonsCount / maxLessons) *
+											100
+										: 0
+								}
+							/>
+							<p className='text-xs text-[#66715F]'>
+								{pluralize(teacher.lessonsCount, {
+									one: 'занятие',
+									few: 'занятия',
+									many: 'занятий'
+								})}{' '}
+								· {formatHours(teacher.minutes)}
+							</p>
 						</div>
 						<div>
 							<p className='text-xs text-[#66715F]'>Ученики</p>
 							<p className='font-mono text-lg font-semibold'>
-								{teacher.students}
+								{teacher.studentsCount}
 							</p>
 						</div>
 						<div>
 							<p className='text-xs text-[#66715F]'>Удержание</p>
-							<p className='font-mono text-lg font-semibold'>
-								{teacher.retention}
-							</p>
+							<p className='font-mono text-lg font-semibold'>—</p>
 						</div>
 					</div>
 				))}
+
+				{!teachers?.length ? (
+					<p className='rounded-md border border-[#D8DED2] p-3 text-sm leading-5 text-[#66715F]'>
+						{teachers
+							? 'Активных преподавателей нет.'
+							: 'Загрузка…'}
+					</p>
+				) : null}
 			</CardContent>
 		</Card>
 	)

@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react'
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -11,9 +12,17 @@ import {
 
 import { cn } from '@/lib/utils'
 
-import type { RevenueMetric } from './data'
+export type Metric = {
+	label: string
+	value: string
+	detail: string
+	delta?: string | null
+	trend?: 'up' | 'down' | null
+	tone: 'good' | 'warning' | 'danger'
+	icon: LucideIcon
+}
 
-export function MetricCard({ metric }: { metric: RevenueMetric }) {
+export function MetricCard({ metric }: { metric: Metric }) {
 	const Icon = metric.icon
 	const isDanger = metric.tone === 'danger'
 	const isWarning = metric.tone === 'warning'
@@ -48,23 +57,25 @@ export function MetricCard({ metric }: { metric: RevenueMetric }) {
 				<p className='min-w-0 text-sm leading-5 text-[#66715F]'>
 					{metric.detail}
 				</p>
-				<Badge
-					variant={
-						isDanger
-							? 'destructive'
-							: isWarning
-								? 'warning'
-								: 'success'
-					}
-					className='shrink-0'
-				>
-					{metric.tone === 'good' ? (
-						<ArrowUpRight aria-hidden='true' />
-					) : (
-						<ArrowDownRight aria-hidden='true' />
-					)}
-					{metric.delta}
-				</Badge>
+				{metric.delta ? (
+					<Badge
+						variant={
+							isDanger
+								? 'destructive'
+								: isWarning
+									? 'warning'
+									: 'success'
+						}
+						className='shrink-0'
+					>
+						{metric.trend === 'down' ? (
+							<ArrowDownRight aria-hidden='true' />
+						) : (
+							<ArrowUpRight aria-hidden='true' />
+						)}
+						{metric.delta}
+					</Badge>
+				) : null}
 			</CardContent>
 		</Card>
 	)

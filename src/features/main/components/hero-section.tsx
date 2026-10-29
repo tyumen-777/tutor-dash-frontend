@@ -1,23 +1,49 @@
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
+import type { LucideIcon } from 'lucide-react'
+import { BookOpenCheck, Sparkles, Target, TrendingUp } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 
 import { cn } from '@/lib/utils'
 
-import type { FocusItem } from './data'
+import type { DashboardSummaryResponse } from '@/api/generated/models'
 
-const controlSignals = ['Деньги', 'Продажи', 'Уроки', 'Риски'] as const
-
-function getSignalValue(index: number) {
-	if (index === 0) return '76%'
-	if (index === 1) return '36%'
-	if (index === 2) return '42'
-	return '31'
+type FocusItem = {
+	label: string
+	value: string
+	icon: LucideIcon
 }
 
-export function HeroSection({ focusItems }: { focusItems: FocusItem[] }) {
+// Прочерк — показатель, для которого в системе пока нет данных
+const NO_DATA = '—'
+
+export function HeroSection({
+	summary
+}: {
+	summary?: DashboardSummaryResponse
+}) {
+	const today = dayjs(summary?.today).locale('ru')
+	const lessonsToday = summary ? String(summary.lessons.todayCount) : NO_DATA
+
+	const focusItems: FocusItem[] = [
+		{ label: 'План-факт', value: NO_DATA, icon: Target },
+		{ label: 'Конверсия в оплату', value: NO_DATA, icon: TrendingUp },
+		{ label: 'Уроков сегодня', value: lessonsToday, icon: BookOpenCheck },
+		{ label: 'NPS уроков', value: NO_DATA, icon: Sparkles }
+	]
+
+	const controlSignals = [
+		{ label: 'Деньги', value: NO_DATA },
+		{ label: 'Продажи', value: NO_DATA },
+		{ label: 'Уроки', value: lessonsToday },
+		{
+			label: 'Риски',
+			value: summary ? String(summary.students.lowBalanceCount) : NO_DATA
+		}
+	]
+
 	return (
 		<Card className='relative rounded-lg border-[#D8DED2] bg-[#101319] p-0 text-white shadow-none'>
 			<div className='grid gap-0 lg:grid-cols-[minmax(0,1fr)_240px]'>
@@ -30,18 +56,18 @@ export function HeroSection({ focusItems }: { focusItems: FocusItem[] }) {
 							variant='outline'
 							className='border-white/20 text-white/75'
 						>
-							Сегодня, {dayjs().locale('ru').format('D MMMM')}
+							Сегодня, {today.format('D MMMM')}
 						</Badge>
 					</div>
 
 					<div className='max-w-3xl space-y-3'>
 						<h1 className='text-3xl leading-[1.05] font-semibold tracking-normal text-balance sm:text-5xl'>
-							Школа держит план, но удержание требует внимания
+							Сводка школы за {today.format('MMMM')}
 						</h1>
 						<p className='max-w-2xl text-sm leading-6 text-white/68 sm:text-base'>
-							Главная собирает деньги, учеников, продажи и уроки в
-							один рабочий экран, чтобы директор видел не просто
-							цифры, а ближайшие решения.
+							Деньги, ученики и занятия в одном рабочем экране.
+							Прочерк — показатель, для которого в системе пока
+							нет данных.
 						</p>
 					</div>
 
@@ -74,9 +100,9 @@ export function HeroSection({ focusItems }: { focusItems: FocusItem[] }) {
 
 				<div className='border-t border-white/10 p-5 lg:border-t-0 lg:border-l'>
 					<div className='grid h-full grid-cols-4 gap-2 lg:grid-cols-1'>
-						{controlSignals.map((label, index) => (
+						{controlSignals.map((signal, index) => (
 							<div
-								key={label}
+								key={signal.label}
 								className={cn(
 									'flex min-h-16 flex-col justify-between rounded-md border border-white/10 p-3',
 									index === 3
@@ -85,10 +111,10 @@ export function HeroSection({ focusItems }: { focusItems: FocusItem[] }) {
 								)}
 							>
 								<span className='text-[0.68rem] font-medium tracking-[0.08em] text-white/60 uppercase'>
-									{label}
+									{signal.label}
 								</span>
 								<span className='font-mono text-lg font-semibold'>
-									{getSignalValue(index)}
+									{signal.value}
 								</span>
 							</div>
 						))}

@@ -1,4 +1,5 @@
 import { UserRoundCheck } from 'lucide-react'
+import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -9,7 +10,13 @@ import {
 	CardTitle
 } from '@/components/ui/card'
 
-export function StudentHealthCard() {
+import type { DashboardSummaryResponse } from '@/api/generated/models'
+
+export function StudentHealthCard({
+	summary
+}: {
+	summary?: DashboardSummaryResponse
+}) {
 	return (
 		<Card className='rounded-lg border-[#D8DED2] bg-[#EEF4F6] shadow-none'>
 			<CardHeader>
@@ -27,21 +34,27 @@ export function StudentHealthCard() {
 						Средняя длина обучения
 					</p>
 					<p className='mt-2 text-3xl leading-none font-semibold'>
-						8,4 мес
+						—
 					</p>
 				</div>
 				<div className='grid grid-cols-2 gap-3'>
 					<div className='rounded-md bg-white p-3'>
 						<p className='text-xs text-[#66715F]'>На паузе</p>
-						<p className='font-mono text-xl font-semibold'>18</p>
+						<p className='font-mono text-xl font-semibold'>
+							{summary ? summary.students.pausedCount : '—'}
+						</p>
 					</div>
 					<div className='rounded-md bg-white p-3'>
 						<p className='text-xs text-[#66715F]'>No-show</p>
-						<p className='font-mono text-xl font-semibold'>4,8%</p>
+						<p className='font-mono text-xl font-semibold'>—</p>
 					</div>
 				</div>
-				<Button className='w-full bg-[#101319] text-white hover:bg-[#263027]'>
-					Открыть учеников в риске
+				<Button
+					nativeButton={false}
+					className='w-full bg-[#101319] text-white hover:bg-[#263027]'
+					render={<Link href='/students' />}
+				>
+					Открыть учеников
 				</Button>
 			</CardContent>
 		</Card>
