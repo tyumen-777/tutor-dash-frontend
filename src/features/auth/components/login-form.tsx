@@ -2,8 +2,9 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { isAxiosError } from 'axios'
-import { LockKeyhole, Mail } from 'lucide-react'
+import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
@@ -19,7 +20,7 @@ import { useLogin } from '../api/use-login'
 import { type LoginFormValues, loginFormSchema } from '../login-form-schema'
 
 const inputClassName =
-	'h-11 w-full rounded-md border border-[#CAD3C6] bg-[#FBFCF8] pr-3 pl-10 text-sm transition-colors outline-none placeholder:text-[#8A9286] focus:border-[#7E9B88] focus:ring-3 focus:ring-[#7E9B88]/20 aria-invalid:border-destructive aria-invalid:focus:ring-destructive/20'
+	'h-11 w-full rounded-md border border-[#CAD3C6] bg-[#FBFCF8] pl-10 text-sm transition-colors outline-none placeholder:text-[#8A9286] focus:border-[#7E9B88] focus:ring-3 focus:ring-[#7E9B88]/20 aria-invalid:border-destructive aria-invalid:focus:ring-destructive/20'
 
 function getLoginErrorMessage(error: unknown) {
 	if (isAxiosError(error)) {
@@ -51,6 +52,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
 		defaultValues: { email: '', password: '' }
 	})
 	const { errors } = form.formState
+	const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
 	function handleValidSubmit(values: LoginFormValues) {
 		login.mutate(
@@ -118,7 +120,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
 								aria-describedby={
 									errors.email ? 'email-error' : undefined
 								}
-								className={inputClassName}
+								className={`${inputClassName} pr-3`}
 							/>
 						</div>
 						{errors.email && (
@@ -154,7 +156,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
 							<input
 								{...form.register('password')}
 								id='password'
-								type='password'
+								type={isPasswordVisible ? 'text' : 'password'}
 								autoComplete='current-password'
 								placeholder='Введите пароль'
 								aria-invalid={Boolean(errors.password)}
@@ -163,8 +165,34 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
 										? 'password-error'
 										: undefined
 								}
-								className={inputClassName}
+								className={`${inputClassName} pr-11`}
 							/>
+							<button
+								type='button'
+								onClick={() =>
+									setIsPasswordVisible(visible => !visible)
+								}
+								aria-label={
+									isPasswordVisible
+										? 'Скрыть пароль'
+										: 'Показать пароль'
+								}
+								aria-pressed={isPasswordVisible}
+								aria-controls='password'
+								className='absolute top-1/2 right-1.5 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-[#7E9B88] transition-colors hover:bg-[#EEF2EA] hover:text-[#3F624B] focus-visible:ring-3 focus-visible:ring-[#7E9B88]/30 focus-visible:outline-none'
+							>
+								{isPasswordVisible ? (
+									<EyeOff
+										className='size-4'
+										aria-hidden='true'
+									/>
+								) : (
+									<Eye
+										className='size-4'
+										aria-hidden='true'
+									/>
+								)}
+							</button>
 						</div>
 						{errors.password && (
 							<p
