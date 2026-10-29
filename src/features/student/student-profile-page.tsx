@@ -36,11 +36,15 @@ import {
 } from '@/components/ui/table'
 
 import { formatMoney } from '@/lib/format-money'
+import { toSchoolTime } from '@/lib/school-time'
 
 import { useStudent } from './api/use-student'
-import type { StudentLesson, StudentPreferredTime } from './types'
+import type { StudentPreferredTime } from './types'
 import type { StudentResponse } from '@/api/generated/models'
-import { useCanManageFinance } from '@/features/auth/api/use-organization-role'
+import {
+	useCanManageFinance,
+	useSchoolTimezone
+} from '@/features/auth/api/use-organization-role'
 import {
 	usePayments,
 	useStudentBalance
@@ -52,6 +56,11 @@ import {
 	PAYMENT_STATUS_LABELS,
 	formatLessons
 } from '@/features/income/payment-options'
+import { useLessons } from '@/features/lessons/api/use-lessons'
+import {
+	LESSON_STATUS_BADGE_VARIANTS,
+	LESSON_STATUS_LABELS
+} from '@/features/lessons/lesson-options'
 import {
 	STUDENT_STATUS_BADGE_VARIANTS,
 	STUDENT_STATUS_LABELS,
@@ -62,10 +71,13 @@ import {
 import { TIMEZONE_OPTIONS } from '@/features/students/timezones'
 import { formatDate } from '@/features/teachers/format'
 
-// TODO: заменить на API, когда появятся эндпоинты занятий
-// и предпочтительного времени ученика.
-const lessons: StudentLesson[] = []
+// TODO: заменить на API, когда появятся шаблоны расписания (ScheduleRule).
 const preferredTimes: StudentPreferredTime[] = []
+
+// Один и тот же запрос в шапке и в блоке занятий — react-query загрузит его один раз
+function getStudentLessonsQuery(studentId: string) {
+	return { studentId, limit: 10 }
+}
 
 function getInitials(fullName: string) {
 	return fullName
@@ -195,7 +207,7 @@ function ProfileHeader({ student }: { student: StudentResponse }) {
 					<div className='grid min-w-0 gap-3 sm:grid-cols-3'>
 						<Stat label='Следующее занятие' value='—' />
 						<BalanceStat studentId={student.id} />
-						<Stat label='Посещаемость' value='—' />
+						<CompletedLessonsStat studentId={student.id} />
 					</div>
 				</div>
 			</div>
@@ -211,6 +223,17 @@ function BalanceStat({ studentId }: { studentId: string }) {
 			label='Остаток'
 			value={balance ? formatLessons(balance.lessonsLeft) : '—'}
 			tone='accent'
+		/>
+	)
+}
+
+function CompletedLessonsStat({ studentId }: { studentId: string }) {
+	const { data } = useLessons(getStudentLessonsQuery(studentId))
+
+	return (
+		<Stat
+			label='Проведено занятий'
+			value={data ? String(data.summary.lessonsCount) : '—'}
 		/>
 	)
 }
@@ -244,43 +267,63 @@ function Contacts({ student }: { student: StudentResponse }) {
 	)
 }
 
-function Lessons() {
+function Lessons({ studentId }: { studentId: string }) {
+	const timezone = useSchoolTimezone()
+	const { data, isPending, isError } = useLessons(
+		getStudentLessonsQuery(studentId)
+	)
+	const lessons = data?.items ?? []
+
 	return (
 		<SectionCard
-			title='Посещенные занятия'
-			description='Последние темы и короткий результат после урока.'
+			title='Занятия'
+			description='Последние занятия ученика: дата, преподаватель и тема.'
 			icon={CheckCircle2}
 		>
 			{lessons.length ? (
 				<>
 					<div className='grid gap-3 md:hidden'>
-						{lessons.map(lesson => (
-							<div
-								key={lesson.id}
-								className='min-w-0 rounded-md border border-[#D8DED2] bg-[#FBFCF8] p-3'
-							>
-								<div className='flex flex-wrap items-center justify-between gap-2'>
-									<p className='leading-5 font-medium text-[#101319]'>
-										{lesson.date}
+						{lessons.map(lesson => {
+							const startsAt = toSchoolTime(
+								lesson.startsAt,
+								timezone
+							)
+
+							return (
+								<div
+									key={lesson.id}
+									className='min-w-0 rounded-md border border-[#D8DED2] bg-[#FBFCF8] p-3'
+								>
+									<div className='flex flex-wrap items-center justify-between gap-2'>
+										<p className='leading-5 font-medium text-[#101319] tabular-nums'>
+											{startsAt.format(
+												'DD.MM.YYYY HH:mm'
+											)}
+										</p>
+										<Badge
+											variant={
+												LESSON_STATUS_BADGE_VARIANTS[
+													lesson.status
+												]
+											}
+										>
+											{
+												LESSON_STATUS_LABELS[
+													lesson.status
+												]
+											}
+										</Badge>
+									</div>
+									<p className='mt-2 text-sm leading-5 text-[#3D453D]'>
+										{lesson.topic ?? 'Без темы'}
 									</p>
-									<Badge
-										variant={
-											lesson.result === 'Уверенно'
-												? 'success'
-												: 'warning'
-										}
-									>
-										{lesson.result}
-									</Badge>
+									<p className='mt-1 text-xs leading-4 text-[#5D665B]'>
+										{lesson.teacher.fullName} ·{' '}
+										{lesson.durationMin} мин
+									</p>
 								</div>
-								<p className='mt-2 text-sm leading-5 text-[#3D453D]'>
-									{lesson.topic}
-								</p>
-								<p className='mt-1 text-xs leading-4 text-[#5D665B]'>
-									{lesson.duration}
-								</p>
-							</div>
-						))}
+							)
+						})}
 					</div>
 
 					<div className='hidden md:block'>
@@ -288,40 +331,76 @@ function Lessons() {
 							<TableHeader>
 								<TableRow>
 									<TableHead>Дата</TableHead>
+									<TableHead>Преподаватель</TableHead>
 									<TableHead>Тема</TableHead>
 									<TableHead>Длительность</TableHead>
-									<TableHead>Результат</TableHead>
+									<TableHead>Статус</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{lessons.map(lesson => (
-									<TableRow key={lesson.id}>
-										<TableCell className='font-medium text-[#101319]'>
-											{lesson.date}
-										</TableCell>
-										<TableCell className='min-w-56 leading-5 whitespace-normal'>
-											{lesson.topic}
-										</TableCell>
-										<TableCell>{lesson.duration}</TableCell>
-										<TableCell>
-											<Badge
-												variant={
-													lesson.result === 'Уверенно'
-														? 'success'
-														: 'warning'
-												}
-											>
-												{lesson.result}
-											</Badge>
-										</TableCell>
-									</TableRow>
-								))}
+								{lessons.map(lesson => {
+									const startsAt = toSchoolTime(
+										lesson.startsAt,
+										timezone
+									)
+
+									return (
+										<TableRow key={lesson.id}>
+											<TableCell className='font-medium text-[#101319] tabular-nums'>
+												{startsAt.format('DD.MM.YYYY')}
+												<span className='ml-2 font-normal text-[#5D665B]'>
+													{startsAt.format('HH:mm')}
+												</span>
+											</TableCell>
+											<TableCell>
+												<Link
+													href={`/teachers/${lesson.teacher.id}`}
+													className='hover:underline'
+												>
+													{lesson.teacher.fullName}
+												</Link>
+											</TableCell>
+											<TableCell className='min-w-56 leading-5 whitespace-normal'>
+												{lesson.topic ?? '—'}
+											</TableCell>
+											<TableCell>
+												{lesson.durationMin} мин
+											</TableCell>
+											<TableCell>
+												<Badge
+													variant={
+														LESSON_STATUS_BADGE_VARIANTS[
+															lesson.status
+														]
+													}
+												>
+													{
+														LESSON_STATUS_LABELS[
+															lesson.status
+														]
+													}
+												</Badge>
+											</TableCell>
+										</TableRow>
+									)
+								})}
 							</TableBody>
 						</Table>
 					</div>
+					{data && data.total > lessons.length ? (
+						<p className='mt-3 text-sm leading-5 text-[#5D665B]'>
+							Показаны последние {lessons.length} из {data.total}.
+						</p>
+					) : null}
 				</>
 			) : (
-				<p className='text-sm leading-5 text-[#5D665B]'>—</p>
+				<p className='text-sm leading-5 text-[#5D665B]'>
+					{isPending
+						? 'Загрузка занятий…'
+						: isError
+							? 'Не удалось загрузить занятия.'
+							: 'Занятий пока нет.'}
+				</p>
 			)}
 		</SectionCard>
 	)
@@ -605,7 +684,7 @@ function StudentProfileContent({ studentId }: StudentProfilePageProps) {
 			<div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]'>
 				<div className='grid min-w-0 gap-4'>
 					<Contacts student={student} />
-					<Lessons />
+					<Lessons studentId={student.id} />
 					<Payments studentId={student.id} />
 				</div>
 				<div className='grid min-w-0 content-start gap-4'>
