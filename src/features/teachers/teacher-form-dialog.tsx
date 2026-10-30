@@ -165,7 +165,7 @@ export function TeacherFormDialog() {
 				Добавить преподавателя
 			</DialogTrigger>
 
-			<DialogContent className='max-h-[calc(100svh-2rem)] overflow-hidden sm:max-w-2xl'>
+			<DialogContent className='flex max-h-[calc(100svh-2rem)] flex-col overflow-hidden sm:max-w-2xl'>
 				{archivedTeacher ? (
 					<div className='flex flex-col gap-4'>
 						<DialogHeader className='pr-8'>
@@ -232,7 +232,7 @@ export function TeacherFormDialog() {
 							</div>
 						</DialogHeader>
 
-						<div className='min-h-0 overflow-y-auto pr-1'>
+						<div className='min-h-0 overflow-y-auto overscroll-contain pr-1'>
 							<FieldGroup>
 								<FieldSet>
 									<FieldLegend>Основные данные</FieldLegend>

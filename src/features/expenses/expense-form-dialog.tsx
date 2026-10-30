@@ -221,7 +221,7 @@ export function ExpenseFormDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogContent className='max-h-[calc(100svh-2rem)] overflow-hidden sm:max-w-2xl'>
+			<DialogContent className='flex max-h-[calc(100svh-2rem)] flex-col overflow-hidden sm:max-w-2xl'>
 				<form
 					className='flex min-h-0 flex-col gap-4'
 					onSubmit={form.handleSubmit(handleValidSubmit)}
@@ -246,7 +246,7 @@ export function ExpenseFormDialog({
 						</div>
 					</DialogHeader>
 
-					<div className='min-h-0 overflow-y-auto pr-1'>
+					<div className='min-h-0 overflow-y-auto overscroll-contain pr-1'>
 						<FieldGroup>
 							<FieldSet>
 								<FieldLegend>Основное</FieldLegend>
