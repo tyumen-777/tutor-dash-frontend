@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { Plus, UserRoundPen, UserRoundPlus } from 'lucide-react'
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 
@@ -27,6 +28,7 @@ import {
 } from '@/components/ui/dialog'
 import {
 	Field,
+	FieldDescription,
 	FieldError,
 	FieldGroup,
 	FieldLabel,
@@ -64,7 +66,10 @@ import {
 	parseApiError
 } from '@/api/errors'
 import type { StudentResponse } from '@/api/generated/models'
+import { getStudyLevelsControllerListStudyLevelsQueryKey } from '@/api/generated/study-levels/study-levels'
 import { getTeachersControllerListTeachersQueryKey } from '@/api/generated/teachers/teachers'
+import { useStudyLevels } from '@/features/study-levels/api/use-study-levels'
+import { formatStudyLevel } from '@/features/study-levels/format'
 import { useTeachers } from '@/features/teachers/api/use-teachers'
 
 const defaultValues: StudentFormValues = {
@@ -73,7 +78,7 @@ const defaultValues: StudentFormValues = {
 	birthDate: '',
 	status: 'ACTIVE',
 	teacherId: '',
-	level: '',
+	levelId: '',
 	timezone: '',
 	phone: '',
 	email: '',
@@ -129,6 +134,7 @@ export function StudentFormDialog({
 	const updateStudent = useUpdateStudent()
 	const mutation = isEdit ? updateStudent : createStudent
 	const teachers = useTeachers('active')
+	const studyLevels = useStudyLevels()
 	const [formError, setFormError] = useState<string | null>(null)
 	const canEditStatus = !student || hasEditableStatus(student)
 
@@ -136,6 +142,17 @@ export function StudentFormDialog({
 	useEffect(() => {
 		if (open) form.reset(initialValues)
 	}, [open, initialValues, form])
+
+	const levelOptions = useMemo(
+		() => [
+			{ value: '', label: 'Без уровня' },
+			...(studyLevels.data?.items ?? []).map(level => ({
+				value: level.id,
+				label: formatStudyLevel(level)
+			}))
+		],
+		[studyLevels.data]
+	)
 
 	const teacherOptions = useMemo(() => {
 		const options = [
@@ -202,6 +219,18 @@ export function StudentFormDialog({
 				})
 				void queryClient.invalidateQueries({
 					queryKey: getTeachersControllerListTeachersQueryKey()
+				})
+				return
+			}
+
+			// Уровень удалили, пока форма была открыта
+			if (hasMessage(apiError, 'Study level not found')) {
+				form.setValue('levelId', '')
+				form.setError('levelId', {
+					message: 'Уровень больше недоступен, выберите другой'
+				})
+				void queryClient.invalidateQueries({
+					queryKey: getStudyLevelsControllerListStudyLevelsQueryKey()
 				})
 				return
 			}
@@ -541,7 +570,7 @@ export function StudentFormDialog({
 									/>
 
 									<Controller
-										name='level'
+										name='levelId'
 										control={form.control}
 										render={({ field, fieldState }) => (
 											<Field
@@ -554,19 +583,81 @@ export function StudentFormDialog({
 												>
 													Уровень
 												</FieldLabel>
-												<Input
-													{...field}
-													id={field.name}
-													placeholder='B1, 7 класс, ОГЭ'
-													maxLength={50}
-													autoComplete='off'
-													aria-invalid={
-														fieldState.invalid
+												<Select
+													items={levelOptions}
+													value={field.value}
+													onValueChange={value =>
+														field.onChange(
+															value ?? ''
+														)
 													}
-													className='h-10'
-												/>
+													disabled={
+														studyLevels.isPending
+													}
+												>
+													<SelectTrigger
+														id={field.name}
+														aria-invalid={
+															fieldState.invalid
+														}
+														className='w-full data-[size=default]:h-10'
+													>
+														<SelectValue
+															placeholder={
+																studyLevels.isPending
+																	? 'Загрузка…'
+																	: 'Без уровня'
+															}
+														/>
+													</SelectTrigger>
+													<SelectContent
+														alignItemWithTrigger={
+															false
+														}
+													>
+														<SelectGroup>
+															{levelOptions.map(
+																option => (
+																	<SelectItem
+																		key={
+																			option.value
+																		}
+																		value={
+																			option.value
+																		}
+																	>
+																		{
+																			option.label
+																		}
+																	</SelectItem>
+																)
+															)}
+														</SelectGroup>
+													</SelectContent>
+												</Select>
+												{studyLevels.data &&
+												!studyLevels.data.items
+													.length ? (
+													<FieldDescription>
+														Уровни задаются в{' '}
+														<Link
+															href='/settings/company'
+															className='underline'
+														>
+															Настройки → Компания
+														</Link>
+													</FieldDescription>
+												) : null}
 												<FieldError
-													errors={[fieldState.error]}
+													errors={[
+														fieldState.error ??
+															(studyLevels.isError
+																? {
+																		message:
+																			'Не удалось загрузить уровни'
+																	}
+																: undefined)
+													]}
 												/>
 											</Field>
 										)}

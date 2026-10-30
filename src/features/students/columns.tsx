@@ -83,12 +83,18 @@ export const columns = columnHelper.columns([
 			)
 		}
 	}),
-	columnHelper.accessor('level', {
+	columnHelper.accessor(student => student.level?.code ?? '', {
+		id: 'level',
 		header: 'Уровень',
-		cell: ({ row }) =>
-			row.original.level ?? (
+		cell: ({ row }) => {
+			const { level } = row.original
+
+			return level ? (
+				<span title={level.name}>{level.code}</span>
+			) : (
 				<span className='text-muted-foreground'>—</span>
 			)
+		}
 	}),
 	columnHelper.display({
 		id: 'contacts',

@@ -27,6 +27,18 @@ export function useCanManageTeachers() {
 	)
 }
 
+const SETTINGS_MANAGER_ROLES = ['owner', 'admin']
+
+/**
+ * School details can be changed by owners and admins; other roles only see
+ * them.
+ */
+export function useCanManageSettings() {
+	return useOrganizationRoles().some(role =>
+		SETTINGS_MANAGER_ROLES.includes(role)
+	)
+}
+
 const STUDENT_MANAGER_ROLES = ['owner', 'admin', 'manager']
 
 /**

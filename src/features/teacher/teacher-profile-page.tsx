@@ -258,7 +258,7 @@ function Students({ students }: { students: StudentResponse[] }) {
 									</p>
 									{student.level ? (
 										<Badge variant='outline'>
-											{student.level}
+											{student.level.code}
 										</Badge>
 									) : null}
 								</div>
@@ -292,7 +292,7 @@ function Students({ students }: { students: StudentResponse[] }) {
 										<TableCell>
 											{student.level ? (
 												<Badge variant='outline'>
-													{student.level}
+													{student.level.code}
 												</Badge>
 											) : (
 												'—'

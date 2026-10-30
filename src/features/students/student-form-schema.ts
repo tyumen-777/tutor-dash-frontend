@@ -70,7 +70,8 @@ export const studentFormSchema = z.object({
 	}),
 	// '' — без преподавателя
 	teacherId: z.string(),
-	level: z.string().trim().max(50, 'Не более 50 символов'),
+	// '' — без уровня
+	levelId: z.string(),
 	// '' — часовой пояс организации
 	timezone: z.string(),
 	phone: optionalPhoneSchema,
@@ -94,7 +95,7 @@ export function toCreateStudentRequest(
 		birthDate: emptyToUndefined(values.birthDate),
 		status: values.status,
 		teacherId: emptyToUndefined(values.teacherId),
-		level: emptyToUndefined(values.level),
+		levelId: emptyToUndefined(values.levelId),
 		timezone: emptyToUndefined(values.timezone),
 		phone: emptyToUndefined(values.phone),
 		email: emptyToUndefined(values.email),
@@ -125,7 +126,7 @@ export function toStudentFormValues(
 			? (student.status as CreateStudentRequestStatus)
 			: CreateStudentRequestStatus.ACTIVE,
 		teacherId: student.teacher?.id ?? '',
-		level: student.level ?? '',
+		levelId: student.level?.id ?? '',
 		timezone: student.timezone ?? '',
 		phone: student.phone ?? '',
 		email: student.email ?? '',
@@ -148,7 +149,7 @@ export function toUpdateStudentRequest(
 		birthDate: emptyToNull(values.birthDate),
 		status: hasEditableStatus(student) ? values.status : undefined,
 		teacherId: emptyToNull(values.teacherId),
-		level: emptyToNull(values.level),
+		levelId: emptyToNull(values.levelId),
 		timezone: emptyToNull(values.timezone),
 		phone: emptyToNull(values.phone),
 		email: emptyToNull(values.email),

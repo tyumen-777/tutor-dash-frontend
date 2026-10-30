@@ -43,11 +43,11 @@ export interface UpdateStudentRequest {
 	 */
 	teacherId?: string | null
 	/**
-	 * Student level in free form, e.g. "A2", "7 класс", "ОГЭ".
-	 * @maxLength 50
+	 * ID of a study level of the organization.
 	 * @nullable
+	 * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
 	 */
-	level?: string | null
+	levelId?: string | null
 	/**
 	 * Birth date (YYYY-MM-DD).
 	 * @nullable

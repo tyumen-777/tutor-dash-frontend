@@ -69,6 +69,7 @@ import {
 	getStudentFullName
 } from '@/features/students/format'
 import { TIMEZONE_OPTIONS } from '@/features/students/timezones'
+import { formatStudyLevel } from '@/features/study-levels/format'
 import { formatDate } from '@/features/teachers/format'
 
 // TODO: заменить на API, когда появятся шаблоны расписания (ScheduleRule).
@@ -103,7 +104,7 @@ function ProfileHeader({ student }: { student: StudentResponse }) {
 	const fullName = getStudentFullName(student)
 	const subtitle = [
 		student.birthDate && formatAge(getAge(student.birthDate)),
-		student.level
+		student.level && formatStudyLevel(student.level)
 	]
 		.filter(Boolean)
 		.join(', ')

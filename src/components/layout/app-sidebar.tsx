@@ -78,7 +78,14 @@ const navigation: (NavigationLink | NavigationGroup)[] = [
 	},
 	{ title: 'Расписание', href: '/calendar', icon: CalendarDays },
 	{ title: 'Материалы', href: '/materials', icon: LibraryBig },
-	{ title: 'Настройки', href: '/settings', icon: Settings }
+	{
+		title: 'Настройки',
+		icon: Settings,
+		children: [
+			{ title: 'Школа', href: '/settings/school' },
+			{ title: 'Компания', href: '/settings/company' }
+		]
+	}
 ]
 
 function isActiveRoute(pathname: string, href: string) {

@@ -5,6 +5,7 @@
  * API documentation for Tutor Dash
  * OpenAPI spec version: 1.0
  */
+import type { StudentResponseLevel } from './studentResponseLevel'
 import type { StudentResponseStatus } from './studentResponseStatus'
 import type { StudentResponseTeacher } from './studentResponseTeacher'
 
@@ -46,10 +47,10 @@ export interface StudentResponse {
 	 */
 	teacher: StudentResponseTeacher
 	/**
-	 * Student level in free form.
+	 * Study level of the student.
 	 * @nullable
 	 */
-	level: string | null
+	level: StudentResponseLevel
 	/**
 	 * Birth date (YYYY-MM-DD).
 	 * @nullable
