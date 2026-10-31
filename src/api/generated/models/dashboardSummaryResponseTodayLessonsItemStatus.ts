@@ -16,5 +16,6 @@ export const DashboardSummaryResponseTodayLessonsItemStatus = {
 	SCHEDULED: 'SCHEDULED',
 	COMPLETED: 'COMPLETED',
 	CANCELED: 'CANCELED',
-	RESCHEDULED: 'RESCHEDULED'
+	RESCHEDULED: 'RESCHEDULED',
+	DELETED: 'DELETED'
 } as const

@@ -26,6 +26,7 @@ import type { BodyType, ErrorType } from '../../api-client'
 import type {
 	CancelLessonRequest,
 	CreateLessonRequest,
+	DeleteLessonRequest,
 	LessonListResponse,
 	LessonResponse,
 	UpdateLessonRequest
@@ -673,6 +674,108 @@ export const useLessonsControllerCancelLesson = <
 > => {
 	return useMutation(
 		getLessonsControllerCancelLessonMutationOptions(options),
+		queryClient
+	)
+}
+/**
+ * Удаляет занятие, внесённое по ошибке: статус «Удалено», причина и автор сохраняются. У проведённого занятия списание возвращается ученику в пакет, а начисление преподавателю больше не учитывается. Удалённые занятия не попадают в список и итоги без фильтра status=DELETED.
+ * @summary Удаление занятия
+ */
+export const lessonsControllerDeleteLesson = (
+	id: string,
+	deleteLessonRequest: BodyType<DeleteLessonRequest>,
+	options?: SecondParameter<typeof apiRequest>,
+	signal?: AbortSignal
+) => {
+	return apiRequest<LessonResponse>(
+		{
+			url: `/lessons/${id}/delete`,
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			data: deleteLessonRequest,
+			signal
+		},
+		options
+	)
+}
+
+export const getLessonsControllerDeleteLessonMutationKey = () =>
+	['lessonsControllerDeleteLesson'] as const
+
+export const getLessonsControllerDeleteLessonMutationOptions = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(options?: {
+	mutation?: UseMutationOptions<
+		Awaited<ReturnType<typeof lessonsControllerDeleteLesson>>,
+		TError,
+		LessonsControllerDeleteLessonMutationVariables,
+		TContext
+	>
+	request?: SecondParameter<typeof apiRequest>
+}): UseMutationOptions<
+	Awaited<ReturnType<typeof lessonsControllerDeleteLesson>>,
+	TError,
+	LessonsControllerDeleteLessonMutationVariables,
+	TContext
+> => {
+	const mutationKey = getLessonsControllerDeleteLessonMutationKey()
+	const { mutation: mutationOptions, request: requestOptions } = options
+		? options.mutation &&
+			'mutationKey' in options.mutation &&
+			options.mutation.mutationKey
+			? options
+			: { ...options, mutation: { ...options.mutation, mutationKey } }
+		: { mutation: { mutationKey }, request: undefined }
+
+	const mutationFn: MutationFunction<
+		Awaited<ReturnType<typeof lessonsControllerDeleteLesson>>,
+		LessonsControllerDeleteLessonMutationVariables
+	> = props => {
+		const { id, data } = props ?? {}
+
+		return lessonsControllerDeleteLesson(id, data, requestOptions)
+	}
+
+	return { mutationFn, ...mutationOptions }
+}
+
+export type LessonsControllerDeleteLessonMutationResult = NonNullable<
+	Awaited<ReturnType<typeof lessonsControllerDeleteLesson>>
+>
+export type LessonsControllerDeleteLessonMutationBody =
+	BodyType<DeleteLessonRequest>
+export type LessonsControllerDeleteLessonMutationError = ErrorType<void>
+export type LessonsControllerDeleteLessonMutationVariables = {
+	id: string
+	data: BodyType<DeleteLessonRequest>
+}
+
+/**
+ * @summary Удаление занятия
+ */
+export const useLessonsControllerDeleteLesson = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(
+	options?: {
+		mutation?: UseMutationOptions<
+			Awaited<ReturnType<typeof lessonsControllerDeleteLesson>>,
+			TError,
+			LessonsControllerDeleteLessonMutationVariables,
+			TContext
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseMutationResult<
+	Awaited<ReturnType<typeof lessonsControllerDeleteLesson>>,
+	TError,
+	LessonsControllerDeleteLessonMutationVariables,
+	TContext
+> => {
+	return useMutation(
+		getLessonsControllerDeleteLessonMutationOptions(options),
 		queryClient
 	)
 }

@@ -7,7 +7,7 @@
  */
 
 /**
- * Filter by lesson status.
+ * Filter by lesson status. Without it deleted lessons are left out; DELETED lists only them.
  */
 export type ListLessonsQueryStatus =
 	(typeof ListLessonsQueryStatus)[keyof typeof ListLessonsQueryStatus]
@@ -16,5 +16,6 @@ export const ListLessonsQueryStatus = {
 	SCHEDULED: 'SCHEDULED',
 	COMPLETED: 'COMPLETED',
 	CANCELED: 'CANCELED',
-	RESCHEDULED: 'RESCHEDULED'
+	RESCHEDULED: 'RESCHEDULED',
+	DELETED: 'DELETED'
 } as const

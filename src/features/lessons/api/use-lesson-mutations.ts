@@ -6,6 +6,7 @@ import {
 	getLessonsControllerListLessonsQueryKey,
 	useLessonsControllerCancelLesson,
 	useLessonsControllerCreateLesson,
+	useLessonsControllerDeleteLesson,
 	useLessonsControllerUpdateLesson
 } from '@/api/generated/lessons/lessons'
 import type { LessonResponse } from '@/api/generated/models'
@@ -74,6 +75,14 @@ export function useCancelLesson() {
 	const refresh = useLessonCache()
 
 	return useLessonsControllerCancelLesson({
+		mutation: { onSuccess: lesson => refresh(lesson) }
+	})
+}
+
+export function useDeleteLesson() {
+	const refresh = useLessonCache()
+
+	return useLessonsControllerDeleteLesson({
 		mutation: { onSuccess: lesson => refresh(lesson) }
 	})
 }

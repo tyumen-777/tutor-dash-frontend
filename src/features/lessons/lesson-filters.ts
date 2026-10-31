@@ -10,6 +10,8 @@ export type LessonFilters = {
 	to: string
 	teacherId: string | null
 	status: ListLessonsQueryStatus | null
+	// Удалённые занятия смотрятся отдельно от основного списка
+	deleted: boolean
 }
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
@@ -33,7 +35,15 @@ export function parseLessonFilters(
 			option => option.value === params.get('status')
 		)?.value ?? null
 
-	return { from, to, teacherId: params.get('teacher') || null, status }
+	const deleted = params.get('view') === 'deleted'
+
+	return {
+		from,
+		to,
+		teacherId: params.get('teacher') || null,
+		status: deleted ? null : status,
+		deleted
+	}
 }
 
 export function serializeLessonFilters(filters: LessonFilters) {
@@ -50,7 +60,9 @@ export function serializeLessonFilters(filters: LessonFilters) {
 	if (filters.teacherId) {
 		params.set('teacher', filters.teacherId)
 	}
-	if (filters.status) {
+	if (filters.deleted) {
+		params.set('view', 'deleted')
+	} else if (filters.status) {
 		params.set('status', filters.status)
 	}
 
@@ -62,7 +74,7 @@ export function toListLessonsQuery(filters: LessonFilters): ListLessonsQuery {
 		from: filters.from,
 		to: filters.to,
 		teacherId: filters.teacherId ?? undefined,
-		status: filters.status ?? undefined,
+		status: filters.deleted ? 'DELETED' : (filters.status ?? undefined),
 		limit: 100
 	}
 }

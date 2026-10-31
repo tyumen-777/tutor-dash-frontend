@@ -5,6 +5,7 @@
  * API documentation for Tutor Dash
  * OpenAPI spec version: 1.0
  */
+import type { LessonResponseDeletedBy } from './lessonResponseDeletedBy'
 import type { LessonResponseStatus } from './lessonResponseStatus'
 import type { LessonResponseStudent } from './lessonResponseStudent'
 import type { LessonResponseTeacher } from './lessonResponseTeacher'
@@ -65,6 +66,22 @@ export interface LessonResponse {
 	 * @nullable
 	 */
 	cancelReason: string | null
+	/**
+	 * Why the lesson was deleted.
+	 * @nullable
+	 */
+	deleteReason: string | null
+	/**
+	 * When the lesson was deleted, in ISO 8601 format.
+	 * @nullable
+	 * @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+	 */
+	deletedAt: string | null
+	/**
+	 * Who deleted the lesson.
+	 * @nullable
+	 */
+	deletedBy: LessonResponseDeletedBy
 	/**
 	 * Creation date in ISO 8601 format.
 	 * @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$

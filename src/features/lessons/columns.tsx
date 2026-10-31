@@ -30,14 +30,18 @@ const columnHelper = createColumnHelper<DataTableFeatures, LessonResponse>()
 
 export function getColumns({
 	canManage,
+	canDelete,
 	timezone,
 	onEdit,
-	onCancel
+	onCancel,
+	onDelete
 }: {
 	canManage: boolean
+	canDelete: boolean
 	timezone: string
 	onEdit: (lesson: LessonResponse) => void
 	onCancel: (lesson: LessonResponse) => void
+	onDelete: (lesson: LessonResponse) => void
 }) {
 	return columnHelper.columns([
 		columnHelper.accessor('startsAt', {
@@ -145,7 +149,7 @@ export function getColumns({
 		columnHelper.accessor('status', {
 			header: 'Статус',
 			cell: ({ row }) => (
-				<div className='max-w-48 whitespace-normal'>
+				<div className='max-w-56 min-w-44 whitespace-normal'>
 					<Badge
 						variant={
 							LESSON_STATUS_BADGE_VARIANTS[row.original.status]
@@ -158,6 +162,22 @@ export function getColumns({
 							{row.original.cancelReason}
 						</p>
 					) : null}
+					{row.original.deleteReason ? (
+						<p className='mt-1 text-xs'>
+							{row.original.deleteReason}
+						</p>
+					) : null}
+					{row.original.deletedAt ? (
+						<p className='text-muted-foreground text-xs'>
+							{row.original.deletedBy?.name ??
+								'Пользователь удалён'}
+							,{' '}
+							{toSchoolTime(
+								row.original.deletedAt,
+								timezone
+							).format('DD.MM.YYYY HH:mm')}
+						</p>
+					) : null}
 				</div>
 			)
 		}),
@@ -167,6 +187,10 @@ export function getColumns({
 				const lesson = row.original
 				// Изменить и отменить можно только проведённое занятие
 				const editable = canManage && lesson.status === 'COMPLETED'
+				const deletable =
+					canDelete &&
+					(lesson.status === 'COMPLETED' ||
+						lesson.status === 'CANCELED')
 
 				return (
 					<DropdownMenu>
@@ -203,9 +227,11 @@ export function getColumns({
 							>
 								Профиль преподавателя
 							</DropdownMenuItem>
+							{editable || deletable ? (
+								<DropdownMenuSeparator />
+							) : null}
 							{editable ? (
 								<>
-									<DropdownMenuSeparator />
 									<DropdownMenuItem
 										onClick={() => onEdit(lesson)}
 									>
@@ -218,6 +244,14 @@ export function getColumns({
 										Отменить занятие
 									</DropdownMenuItem>
 								</>
+							) : null}
+							{deletable ? (
+								<DropdownMenuItem
+									variant='destructive'
+									onClick={() => onDelete(lesson)}
+								>
+									Удалить занятие
+								</DropdownMenuItem>
 							) : null}
 						</DropdownMenuContent>
 					</DropdownMenu>

@@ -86,6 +86,17 @@ export function useCanManageLessons() {
 	)
 }
 
+const LESSON_DELETER_ROLES = ['owner', 'admin']
+
+/**
+ * Deleting lessons registered by mistake is limited to owners and admins.
+ */
+export function useCanDeleteLessons() {
+	return useOrganizationRoles().some(role =>
+		LESSON_DELETER_ROLES.includes(role)
+	)
+}
+
 /**
  * The active organization of the session (school), if one is selected.
  */

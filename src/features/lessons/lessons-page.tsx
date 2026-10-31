@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, X } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, X } from 'lucide-react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
@@ -21,6 +21,7 @@ import { formatMoney } from '@/lib/format-money'
 import { useLessons } from './api/use-lessons'
 import { CancelLessonDialog } from './cancel-lesson-dialog'
 import { getColumns } from './columns'
+import { DeleteLessonDialog } from './delete-lesson-dialog'
 import {
 	type LessonFilters,
 	parseLessonFilters,
@@ -31,6 +32,7 @@ import { LessonFormDialog } from './lesson-form-dialog'
 import { lessonStatusOptions } from './lesson-options'
 import type { LessonResponse } from '@/api/generated/models'
 import {
+	useCanDeleteLessons,
 	useCanManageLessons,
 	useSchoolTimezone
 } from '@/features/auth/api/use-organization-role'
@@ -85,6 +87,7 @@ type DialogState =
 	| { type: 'create' }
 	| { type: 'edit'; lesson: LessonResponse }
 	| { type: 'cancel'; lesson: LessonResponse }
+	| { type: 'delete'; lesson: LessonResponse }
 	| null
 
 export default function LessonsPage() {
@@ -97,6 +100,7 @@ export default function LessonsPage() {
 		[query]
 	)
 	const canManage = useCanManageLessons()
+	const canDelete = useCanDeleteLessons()
 	const timezone = useSchoolTimezone()
 	const { data, isPending, isError } = useLessons(toListLessonsQuery(filters))
 	const teachers = useTeachers('all')
@@ -114,11 +118,13 @@ export default function LessonsPage() {
 		() =>
 			getColumns({
 				canManage,
+				canDelete,
 				timezone,
 				onEdit: lesson => setDialog({ type: 'edit', lesson }),
-				onCancel: lesson => setDialog({ type: 'cancel', lesson })
+				onCancel: lesson => setDialog({ type: 'cancel', lesson }),
+				onDelete: lesson => setDialog({ type: 'delete', lesson })
 			}),
-		[canManage, timezone]
+		[canManage, canDelete, timezone]
 	)
 
 	function updateFilters(next: LessonFilters) {
@@ -130,12 +136,16 @@ export default function LessonsPage() {
 
 	const summary = data?.summary
 	const currency = data?.items[0]?.currency
+	const hasFilters =
+		serializeLessonFilters({ ...filters, deleted: false }) !== ''
 
 	const emptyMessage = isPending
 		? 'Загрузка занятий…'
 		: isError
 			? 'Не удалось загрузить занятия.'
-			: 'За выбранный период занятий нет.'
+			: filters.deleted
+				? 'За выбранный период удалённых занятий нет.'
+				: 'За выбранный период занятий нет.'
 
 	function closeDialog(open: boolean) {
 		if (!open) setDialog(null)
@@ -145,13 +155,27 @@ export default function LessonsPage() {
 		<div className='container mx-auto flex flex-col gap-6 py-10'>
 			<div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
 				<div className='space-y-1'>
-					<h1 className='text-2xl font-semibold'>Занятия</h1>
+					<h1 className='text-2xl font-semibold'>
+						{filters.deleted ? 'Удалённые занятия' : 'Занятия'}
+					</h1>
 					<p className='text-muted-foreground text-sm'>
-						Проведённые занятия: списания у учеников и начисления
-						преподавателям.
+						{filters.deleted
+							? 'Занятия, внесённые по ошибке. Они не учитываются в списаниях, начислениях и итогах.'
+							: 'Проведённые занятия: списания у учеников и начисления преподавателям.'}
 					</p>
 				</div>
-				{canManage ? (
+				{filters.deleted ? (
+					<Button
+						size='lg'
+						variant='outline'
+						onClick={() =>
+							updateFilters({ ...filters, deleted: false })
+						}
+					>
+						<ArrowLeft data-icon='inline-start' />
+						Все занятия
+					</Button>
+				) : canManage ? (
 					<Button
 						size='lg'
 						onClick={() => setDialog({ type: 'create' })}
@@ -180,48 +204,74 @@ export default function LessonsPage() {
 					}
 					className='w-56'
 				/>
-				<OptionFilter
-					label='Статус'
-					allLabel='Все статусы'
-					options={lessonStatusOptions}
-					value={filters.status}
-					onChange={status => updateFilters({ ...filters, status })}
-				/>
-				{query ? (
+				{filters.deleted ? null : (
+					<OptionFilter
+						label='Статус'
+						allLabel='Все статусы'
+						options={lessonStatusOptions}
+						value={filters.status}
+						onChange={status =>
+							updateFilters({ ...filters, status })
+						}
+					/>
+				)}
+				{hasFilters ? (
 					<Button
 						variant='ghost'
 						onClick={() =>
-							router.replace(pathname, { scroll: false })
+							updateFilters({
+								...parseLessonFilters(new URLSearchParams()),
+								deleted: filters.deleted
+							})
 						}
 					>
 						Сбросить
 						<X data-icon='inline-end' />
 					</Button>
 				) : null}
+				{/* Удалённые не смешиваются с основным списком — только отдельный просмотр */}
+				{!filters.deleted && summary && summary.deletedCount > 0 ? (
+					<Button
+						variant='ghost'
+						className='text-muted-foreground sm:ml-auto'
+						onClick={() =>
+							updateFilters({
+								...filters,
+								status: null,
+								deleted: true
+							})
+						}
+					>
+						<Trash2 data-icon='inline-start' />
+						Удалённые · {summary.deletedCount}
+					</Button>
+				) : null}
 			</div>
 
-			<section
-				aria-label={`Итоги · ${formatPeriod(filters.from, filters.to)}`}
-				className='grid gap-3 sm:grid-cols-3'
-			>
-				<Stat
-					label='Проведено занятий'
-					value={summary ? String(summary.lessonsCount) : '—'}
-				/>
-				<Stat
-					label='Начислено преподавателям'
-					value={
-						summary
-							? formatMoney(summary.teacherPayTotal, currency)
-							: '—'
-					}
-					tone='accent'
-				/>
-				<Stat
-					label='Отменено'
-					value={summary ? String(summary.canceledCount) : '—'}
-				/>
-			</section>
+			{filters.deleted ? null : (
+				<section
+					aria-label={`Итоги · ${formatPeriod(filters.from, filters.to)}`}
+					className='grid gap-3 sm:grid-cols-3'
+				>
+					<Stat
+						label='Проведено занятий'
+						value={summary ? String(summary.lessonsCount) : '—'}
+					/>
+					<Stat
+						label='Начислено преподавателям'
+						value={
+							summary
+								? formatMoney(summary.teacherPayTotal, currency)
+								: '—'
+						}
+						tone='accent'
+					/>
+					<Stat
+						label='Отменено'
+						value={summary ? String(summary.canceledCount) : '—'}
+					/>
+				</section>
+			)}
 
 			<div>
 				<DataTable
@@ -248,6 +298,13 @@ export default function LessonsPage() {
 			) : null}
 			{dialog?.type === 'edit' ? (
 				<LessonFormDialog
+					lesson={dialog.lesson}
+					open
+					onOpenChange={closeDialog}
+				/>
+			) : null}
+			{dialog?.type === 'delete' ? (
+				<DeleteLessonDialog
 					lesson={dialog.lesson}
 					open
 					onOpenChange={closeDialog}

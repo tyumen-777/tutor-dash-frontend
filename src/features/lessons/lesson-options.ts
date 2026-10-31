@@ -4,17 +4,19 @@ export const LESSON_STATUS_LABELS: Record<LessonResponseStatus, string> = {
 	SCHEDULED: 'Запланировано',
 	COMPLETED: 'Проведено',
 	CANCELED: 'Отменено',
-	RESCHEDULED: 'Перенесено'
+	RESCHEDULED: 'Перенесено',
+	DELETED: 'Удалено'
 }
 
 export const LESSON_STATUS_BADGE_VARIANTS: Record<
 	LessonResponseStatus,
-	'success' | 'outline' | 'warning' | 'secondary'
+	'success' | 'outline' | 'warning' | 'secondary' | 'destructive'
 > = {
 	SCHEDULED: 'secondary',
 	COMPLETED: 'success',
 	CANCELED: 'outline',
-	RESCHEDULED: 'warning'
+	RESCHEDULED: 'warning',
+	DELETED: 'destructive'
 }
 
 // Пока занятия только вносятся по факту — фильтруем по этим двум статусам

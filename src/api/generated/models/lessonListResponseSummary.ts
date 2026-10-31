@@ -24,4 +24,10 @@ export type LessonListResponseSummary = {
 	 * @maximum 9007199254740991
 	 */
 	canceledCount: number
+	/**
+	 * Deleted lessons matching the filters except status.
+	 * @minimum -9007199254740991
+	 * @maximum 9007199254740991
+	 */
+	deletedCount: number
 }
