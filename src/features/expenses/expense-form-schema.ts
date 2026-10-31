@@ -48,11 +48,15 @@ export const expenseFormSchema = z.object({
 	category: z.enum(categories, { error: 'Выберите категорию' }),
 	// Пустая строка — преподаватель не выбран
 	teacherId: z.string(),
+	// Пустая строка — получатель не указан
 	recipient: z
 		.string()
 		.trim()
-		.min(2, 'Укажите получателя')
-		.max(100, 'Не более 100 символов'),
+		.max(100, 'Не более 100 символов')
+		.refine(
+			value => value === '' || value.length >= 2,
+			'Не менее 2 символов'
+		),
 	method: z.enum(methods, { error: 'Выберите способ оплаты' }),
 	status: z.enum(['PAID', 'PENDING'], { error: 'Выберите статус' }),
 	description: z
@@ -87,7 +91,7 @@ export function getEditDefaultValues(
 		amount: Number(expense.amount),
 		category: expense.category,
 		teacherId: expense.teacher?.id ?? '',
-		recipient: expense.recipient,
+		recipient: expense.recipient ?? '',
 		method: expense.method,
 		status: expense.status === 'CANCELED' ? undefined : expense.status,
 		description: expense.description,
@@ -108,7 +112,7 @@ export function toCreateExpenseRequest(
 		spentOn: values.spentOn,
 		amount: values.amount,
 		category: values.category,
-		recipient: values.recipient,
+		recipient: values.recipient || undefined,
 		method: values.method,
 		status: values.status,
 		description: values.description,

@@ -106,10 +106,11 @@ export function getColumns({
 						href={`/teacher/${row.original.teacher.id}`}
 						className='hover:underline'
 					>
-						{row.original.recipient}
+						{row.original.recipient ??
+							row.original.teacher.fullName}
 					</Link>
 				) : (
-					row.original.recipient
+					(row.original.recipient ?? '—')
 				)
 		}),
 		columnHelper.accessor('method', {

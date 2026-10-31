@@ -31,7 +31,7 @@ export interface CreateExpenseRequest {
 	 * @minLength 2
 	 * @maxLength 100
 	 */
-	recipient: string
+	recipient?: string
 	/** Payment method: cash, card, bank transfer or other. */
 	method: CreateExpenseRequestMethod
 	/** PAID — already paid, PENDING — awaiting payment. */

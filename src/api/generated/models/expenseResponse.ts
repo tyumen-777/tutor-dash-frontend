@@ -31,8 +31,11 @@ export interface ExpenseResponse {
 	currency: string
 	/** Expense category. */
 	category: ExpenseResponseCategory
-	/** Who received the money. */
-	recipient: string
+	/**
+	 * Who received the money.
+	 * @nullable
+	 */
+	recipient: string | null
 	/** Payment method. */
 	method: ExpenseResponseMethod
 	/** Expense status. */

@@ -239,8 +239,7 @@ export function ExpenseFormDialog({
 										: 'Новый расход'}
 								</DialogTitle>
 								<DialogDescription>
-									Укажите сумму, категорию и получателя
-									платежа.
+									Укажите сумму и категорию платежа.
 								</DialogDescription>
 							</div>
 						</div>
@@ -472,7 +471,7 @@ export function ExpenseFormDialog({
 												<Input
 													{...field}
 													id={field.name}
-													placeholder='ООО «БизнесЦентр Плюс»'
+													placeholder='Необязательно'
 													autoComplete='off'
 													aria-invalid={
 														fieldState.invalid

@@ -27,7 +27,7 @@ export interface UpdateExpenseRequest {
 	/** Expense category: rent, teacher salary, materials, marketing, utilities, software, household, taxes or other. */
 	category?: UpdateExpenseRequestCategory
 	/**
-	 * Who received the money.
+	 * Who received the money; an empty string clears it.
 	 * @minLength 2
 	 * @maxLength 100
 	 */
