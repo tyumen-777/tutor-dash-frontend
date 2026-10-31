@@ -1,7 +1,11 @@
 import dayjs from 'dayjs'
 import { z } from 'zod'
 
-import type { CreateTeacherRequest } from '@/api/generated/models'
+import type {
+	CreateTeacherRequest,
+	TeacherResponse,
+	UpdateTeacherRequest
+} from '@/api/generated/models'
 
 const MAX_HOURLY_RATE = 9_999_999_999.99
 
@@ -79,5 +83,35 @@ export function toCreateTeacherRequest(
 		phone: emptyToUndefined(values.phone),
 		email: emptyToUndefined(values.email),
 		telegram: emptyToUndefined(values.telegram)
+	}
+}
+
+export function toTeacherFormValues(
+	teacher: TeacherResponse
+): TeacherFormValues {
+	return {
+		fullName: teacher.fullName,
+		hourlyRate: Number(teacher.hourlyRate),
+		startedOn: teacher.startedOn,
+		phone: teacher.phone ?? '',
+		email: teacher.email ?? '',
+		telegram: teacher.telegram ?? ''
+	}
+}
+
+function emptyToNull(value: string) {
+	return value === '' ? null : value
+}
+
+export function toUpdateTeacherRequest(
+	values: TeacherFormValues
+): UpdateTeacherRequest {
+	return {
+		fullName: values.fullName,
+		hourlyRate: values.hourlyRate,
+		startedOn: values.startedOn,
+		phone: emptyToNull(values.phone),
+		email: emptyToNull(values.email),
+		telegram: emptyToNull(values.telegram)
 	}
 }

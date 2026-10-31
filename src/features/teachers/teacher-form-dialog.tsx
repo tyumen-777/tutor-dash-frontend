@@ -2,10 +2,10 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import dayjs from 'dayjs'
-import { ArchiveRestore, BriefcaseBusiness, Plus } from 'lucide-react'
+import { ArchiveRestore, BriefcaseBusiness, Pencil, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
@@ -29,18 +29,23 @@ import {
 import { Input } from '@/components/ui/input'
 
 import { useCreateTeacher } from './api/use-create-teacher'
+import { useUpdateTeacher } from './api/use-teacher-mutations'
 import {
 	type TeacherFormValues,
 	teacherFormSchema,
-	toCreateTeacherRequest
+	toCreateTeacherRequest,
+	toTeacherFormValues,
+	toUpdateTeacherRequest
 } from './teacher-form-schema'
 import { useRestoreTeacherAction } from './use-restore-teacher-action'
 import {
 	type ApiError,
 	UNKNOWN_ERROR_MESSAGE,
 	getCommonErrorMessage,
+	hasMessage,
 	parseApiError
 } from '@/api/errors'
+import type { TeacherResponse } from '@/api/generated/models'
 
 function getDefaultValues(): Partial<TeacherFormValues> {
 	return {
@@ -76,36 +81,74 @@ function getInvalidFields(error: ApiError) {
 
 type ArchivedTeacher = { id: string; email: string | null }
 
-export function TeacherFormDialog() {
-	const [open, setOpen] = useState(false)
+type TeacherFormDialogProps =
+	| { teacher?: undefined; open?: undefined; onOpenChange?: undefined }
+	| {
+			teacher: TeacherResponse
+			open: boolean
+			onOpenChange: (open: boolean) => void
+	  }
+
+/**
+ * Adds a teacher (with its own trigger button) or, when `teacher` is passed,
+ * edits it in a dialog controlled by the caller.
+ */
+export function TeacherFormDialog({
+	teacher,
+	open: controlledOpen,
+	onOpenChange
+}: TeacherFormDialogProps) {
+	const isEdit = !!teacher
+	const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
+	const open = controlledOpen ?? uncontrolledOpen
+	const initialValues = useMemo(
+		() => (teacher ? toTeacherFormValues(teacher) : getDefaultValues()),
+		[teacher]
+	)
 	const form = useForm<TeacherFormValues>({
 		resolver: zodResolver(teacherFormSchema),
-		defaultValues: getDefaultValues(),
+		defaultValues: initialValues,
 		reValidateMode: 'onChange'
 	})
 	const router = useRouter()
 	const createTeacher = useCreateTeacher()
+	const updateTeacher = useUpdateTeacher()
+	const mutation = isEdit ? updateTeacher : createTeacher
 	const { restore, isPending: isRestoring } = useRestoreTeacherAction()
 	const [formError, setFormError] = useState<string | null>(null)
 	const [archivedTeacher, setArchivedTeacher] =
 		useState<ArchivedTeacher | null>(null)
 
+	// Форма редактирования заполняется актуальными данными при каждом открытии
+	useEffect(() => {
+		if (open) form.reset(initialValues)
+	}, [open, initialValues, form])
+
 	function handleOpenChange(nextOpen: boolean) {
-		setOpen(nextOpen)
+		if (onOpenChange) {
+			onOpenChange(nextOpen)
+		} else {
+			setUncontrolledOpen(nextOpen)
+		}
 
 		if (!nextOpen) {
-			form.reset(getDefaultValues())
-			createTeacher.reset()
+			form.reset(initialValues)
+			mutation.reset()
 			setFormError(null)
 			setArchivedTeacher(null)
 		}
 	}
 
-	function handleCreateError(error: unknown, values: TeacherFormValues) {
+	function handleSubmitError(error: unknown, values: TeacherFormValues) {
 		const apiError = parseApiError(error)
 
+		if (isEdit && apiError.status === 404) {
+			setFormError('Преподаватель не найден — возможно, его удалили')
+			return
+		}
+
 		if (apiError.status === 409) {
-			if (apiError.archivedTeacherId) {
+			if (!isEdit && apiError.archivedTeacherId) {
 				setArchivedTeacher({
 					id: apiError.archivedTeacherId,
 					email: values.email || null
@@ -120,6 +163,15 @@ export function TeacherFormDialog() {
 		}
 
 		if (apiError.status === 400) {
+			if (
+				hasMessage(apiError, 'startedOn cannot be later than endedOn')
+			) {
+				form.setError('startedOn', {
+					message: 'Дата начала не может быть позже даты увольнения'
+				})
+				return
+			}
+
 			const fields = getInvalidFields(apiError)
 
 			if (fields.length) {
@@ -148,22 +200,34 @@ export function TeacherFormDialog() {
 	}
 
 	function handleValidSubmit(values: TeacherFormValues) {
+		const options = {
+			onSuccess: () => handleOpenChange(false),
+			onError: (error: unknown) => handleSubmitError(error, values)
+		}
+
 		setFormError(null)
-		createTeacher.mutate(
-			{ data: toCreateTeacherRequest(values) },
-			{
-				onSuccess: () => handleOpenChange(false),
-				onError: error => handleCreateError(error, values)
-			}
-		)
+
+		if (teacher) {
+			updateTeacher.mutate(
+				{ id: teacher.id, data: toUpdateTeacherRequest(values) },
+				options
+			)
+		} else {
+			createTeacher.mutate(
+				{ data: toCreateTeacherRequest(values) },
+				options
+			)
+		}
 	}
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogTrigger render={<Button size='lg' />}>
-				<Plus data-icon='inline-start' />
-				Добавить преподавателя
-			</DialogTrigger>
+			{isEdit ? null : (
+				<DialogTrigger render={<Button size='lg' />}>
+					<Plus data-icon='inline-start' />
+					Добавить преподавателя
+				</DialogTrigger>
+			)}
 
 			<DialogContent className='flex max-h-[calc(100svh-2rem)] flex-col overflow-hidden sm:max-w-2xl'>
 				{archivedTeacher ? (
@@ -218,15 +282,22 @@ export function TeacherFormDialog() {
 						<DialogHeader className='pr-8'>
 							<div className='flex items-start gap-3'>
 								<div className='bg-muted flex size-9 shrink-0 items-center justify-center rounded-lg'>
-									<BriefcaseBusiness aria-hidden='true' />
+									{isEdit ? (
+										<Pencil aria-hidden='true' />
+									) : (
+										<BriefcaseBusiness aria-hidden='true' />
+									)}
 								</div>
 								<div className='flex min-w-0 flex-col gap-1'>
 									<DialogTitle>
-										Новый преподаватель
+										{isEdit
+											? 'Редактирование преподавателя'
+											: 'Новый преподаватель'}
 									</DialogTitle>
 									<DialogDescription>
-										Заполните основные данные, ставку и
-										добавьте способ связи.
+										{isEdit
+											? 'Новая ставка применится к занятиям, созданным после сохранения. Очистите контакт, чтобы удалить его.'
+											: 'Заполните основные данные, ставку и добавьте способ связи.'}
 									</DialogDescription>
 								</div>
 							</div>
@@ -342,6 +413,10 @@ export function TeacherFormDialog() {
 														{...field}
 														id={field.name}
 														type='date'
+														max={
+															teacher?.endedOn ??
+															undefined
+														}
 														aria-invalid={
 															fieldState.invalid
 														}
@@ -483,13 +558,12 @@ export function TeacherFormDialog() {
 							>
 								Отмена
 							</Button>
-							<Button
-								type='submit'
-								disabled={createTeacher.isPending}
-							>
-								{createTeacher.isPending
+							<Button type='submit' disabled={mutation.isPending}>
+								{mutation.isPending
 									? 'Сохранение…'
-									: 'Добавить преподавателя'}
+									: isEdit
+										? 'Сохранить'
+										: 'Добавить преподавателя'}
 							</Button>
 						</DialogFooter>
 					</form>

@@ -9,7 +9,8 @@ import {
 	getTeachersControllerListTeachersQueryKey,
 	useTeachersControllerArchiveTeacher,
 	useTeachersControllerDeleteTeacher,
-	useTeachersControllerRestoreTeacher
+	useTeachersControllerRestoreTeacher,
+	useTeachersControllerUpdateTeacher
 } from '@/api/generated/teachers/teachers'
 
 function useTeacherCache() {
@@ -50,6 +51,17 @@ function useTeacherCache() {
 			})
 		}
 	}
+}
+
+export function useUpdateTeacher() {
+	const cache = useTeacherCache()
+
+	return useTeachersControllerUpdateTeacher({
+		mutation: {
+			onSuccess: teacher => cache.update(teacher),
+			onError: (error, { id }) => cache.refreshOnConflict(error, id)
+		}
+	})
 }
 
 export function useArchiveTeacher() {

@@ -1,6 +1,12 @@
 'use client'
 
-import { Archive, ArchiveRestore, MoreHorizontal, Trash2 } from 'lucide-react'
+import {
+	Archive,
+	ArchiveRestore,
+	MoreHorizontal,
+	Pencil,
+	Trash2
+} from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 
@@ -16,6 +22,7 @@ import {
 
 import { ArchiveTeacherDialog } from './archive-teacher-dialog'
 import { DeleteTeacherDialog } from './delete-teacher-dialog'
+import { TeacherFormDialog } from './teacher-form-dialog'
 import { useRestoreTeacherAction } from './use-restore-teacher-action'
 import type { TeacherResponse } from '@/api/generated/models'
 import { useCanManageTeachers } from '@/features/auth/api/use-organization-role'
@@ -37,6 +44,7 @@ export function TeacherActions({
 	const canManage = useCanManageTeachers()
 	const [archiveOpen, setArchiveOpen] = useState(false)
 	const [deleteOpen, setDeleteOpen] = useState(false)
+	const [editOpen, setEditOpen] = useState(false)
 	const { restore, isPending: isRestoring } = useRestoreTeacherAction()
 	const isRow = variant === 'row'
 
@@ -58,6 +66,12 @@ export function TeacherActions({
 
 	return (
 		<div className='flex items-center justify-end gap-2'>
+			{canManage && !isRow ? (
+				<Button variant='outline' onClick={() => setEditOpen(true)}>
+					<Pencil data-icon='inline-start' />
+					Редактировать
+				</Button>
+			) : null}
 			{primaryAction}
 
 			<DropdownMenu>
@@ -90,6 +104,10 @@ export function TeacherActions({
 					) : null}
 					{canManage && isRow ? (
 						<>
+							<DropdownMenuItem onClick={() => setEditOpen(true)}>
+								<Pencil />
+								Редактировать
+							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							{teacher.isActive ? (
 								<DropdownMenuItem
@@ -125,6 +143,11 @@ export function TeacherActions({
 
 			{canManage ? (
 				<>
+					<TeacherFormDialog
+						teacher={teacher}
+						open={editOpen}
+						onOpenChange={setEditOpen}
+					/>
 					<ArchiveTeacherDialog
 						teacher={teacher}
 						open={archiveOpen}

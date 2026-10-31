@@ -27,7 +27,8 @@ import type {
 	ArchiveTeacherRequest,
 	CreateTeacherRequest,
 	TeacherListResponse,
-	TeacherResponse
+	TeacherResponse,
+	UpdateTeacherRequest
 } from '../models'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -474,6 +475,108 @@ export function useTeachersControllerGetTeacher<
 	return withQueryKey(query, queryOptions.queryKey)
 }
 
+/**
+ * Меняет ФИО, контакты, ставку в час и дату начала работы. Новая ставка применяется к занятиям, созданным после изменения. Пустая строка или null очищает контакт.
+ * @summary Изменение учителя
+ */
+export const teachersControllerUpdateTeacher = (
+	id: string,
+	updateTeacherRequest: BodyType<UpdateTeacherRequest>,
+	options?: SecondParameter<typeof apiRequest>,
+	signal?: AbortSignal
+) => {
+	return apiRequest<TeacherResponse>(
+		{
+			url: `/teachers/${id}`,
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			data: updateTeacherRequest,
+			signal
+		},
+		options
+	)
+}
+
+export const getTeachersControllerUpdateTeacherMutationKey = () =>
+	['teachersControllerUpdateTeacher'] as const
+
+export const getTeachersControllerUpdateTeacherMutationOptions = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(options?: {
+	mutation?: UseMutationOptions<
+		Awaited<ReturnType<typeof teachersControllerUpdateTeacher>>,
+		TError,
+		TeachersControllerUpdateTeacherMutationVariables,
+		TContext
+	>
+	request?: SecondParameter<typeof apiRequest>
+}): UseMutationOptions<
+	Awaited<ReturnType<typeof teachersControllerUpdateTeacher>>,
+	TError,
+	TeachersControllerUpdateTeacherMutationVariables,
+	TContext
+> => {
+	const mutationKey = getTeachersControllerUpdateTeacherMutationKey()
+	const { mutation: mutationOptions, request: requestOptions } = options
+		? options.mutation &&
+			'mutationKey' in options.mutation &&
+			options.mutation.mutationKey
+			? options
+			: { ...options, mutation: { ...options.mutation, mutationKey } }
+		: { mutation: { mutationKey }, request: undefined }
+
+	const mutationFn: MutationFunction<
+		Awaited<ReturnType<typeof teachersControllerUpdateTeacher>>,
+		TeachersControllerUpdateTeacherMutationVariables
+	> = props => {
+		const { id, data } = props ?? {}
+
+		return teachersControllerUpdateTeacher(id, data, requestOptions)
+	}
+
+	return { mutationFn, ...mutationOptions }
+}
+
+export type TeachersControllerUpdateTeacherMutationResult = NonNullable<
+	Awaited<ReturnType<typeof teachersControllerUpdateTeacher>>
+>
+export type TeachersControllerUpdateTeacherMutationBody =
+	BodyType<UpdateTeacherRequest>
+export type TeachersControllerUpdateTeacherMutationError = ErrorType<void>
+export type TeachersControllerUpdateTeacherMutationVariables = {
+	id: string
+	data: BodyType<UpdateTeacherRequest>
+}
+
+/**
+ * @summary Изменение учителя
+ */
+export const useTeachersControllerUpdateTeacher = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(
+	options?: {
+		mutation?: UseMutationOptions<
+			Awaited<ReturnType<typeof teachersControllerUpdateTeacher>>,
+			TError,
+			TeachersControllerUpdateTeacherMutationVariables,
+			TContext
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseMutationResult<
+	Awaited<ReturnType<typeof teachersControllerUpdateTeacher>>,
+	TError,
+	TeachersControllerUpdateTeacherMutationVariables,
+	TContext
+> => {
+	return useMutation(
+		getTeachersControllerUpdateTeacherMutationOptions(options),
+		queryClient
+	)
+}
 /**
  * Физически удаляет учителя, созданного по ошибке. Учителя, у которого есть занятия или шаблоны расписания, удалить нельзя: его нужно перевести в архив.
  * @summary Удаление учителя
