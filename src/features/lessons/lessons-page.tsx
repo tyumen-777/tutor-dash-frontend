@@ -82,7 +82,10 @@ function OptionFilter<T extends string>({
 }
 
 type DialogState =
-	{ type: 'create' } | { type: 'cancel'; lesson: LessonResponse } | null
+	| { type: 'create' }
+	| { type: 'edit'; lesson: LessonResponse }
+	| { type: 'cancel'; lesson: LessonResponse }
+	| null
 
 export default function LessonsPage() {
 	const router = useRouter()
@@ -112,6 +115,7 @@ export default function LessonsPage() {
 			getColumns({
 				canManage,
 				timezone,
+				onEdit: lesson => setDialog({ type: 'edit', lesson }),
 				onCancel: lesson => setDialog({ type: 'cancel', lesson })
 			}),
 		[canManage, timezone]
@@ -239,6 +243,13 @@ export default function LessonsPage() {
 			{canManage ? (
 				<LessonFormDialog
 					open={dialog?.type === 'create'}
+					onOpenChange={closeDialog}
+				/>
+			) : null}
+			{dialog?.type === 'edit' ? (
+				<LessonFormDialog
+					lesson={dialog.lesson}
+					open
 					onOpenChange={closeDialog}
 				/>
 			) : null}

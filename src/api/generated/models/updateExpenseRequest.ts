@@ -26,12 +26,8 @@ export interface UpdateExpenseRequest {
 	amount?: number
 	/** Expense category: rent, teacher salary, materials, marketing, utilities, software, household, taxes or other. */
 	category?: UpdateExpenseRequestCategory
-	/**
-	 * Who received the money; an empty string clears it.
-	 * @minLength 2
-	 * @maxLength 100
-	 */
-	recipient?: string
+	/** Who received the money; an empty string clears it. */
+	recipient?: string | ''
 	/** Payment method: cash, card, bank transfer or other. */
 	method?: UpdateExpenseRequestMethod
 	/** PAID — already paid, PENDING — awaiting payment. */

@@ -1,7 +1,7 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { GraduationCap } from 'lucide-react'
+import { GraduationCap, Pencil } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -48,12 +48,14 @@ import {
 	schoolNow
 } from '@/lib/school-time'
 
-import { useCreateLesson } from './api/use-lesson-mutations'
+import { useCreateLesson, useUpdateLesson } from './api/use-lesson-mutations'
 import {
 	type LessonFormValues,
 	createLessonFormSchema,
 	getCreateDefaultValues,
-	toCreateLessonRequest
+	getEditDefaultValues,
+	toCreateLessonRequest,
+	toUpdateLessonRequest
 } from './lesson-form-schema'
 import { calculateTeacherPay, lessonDurationOptions } from './lesson-options'
 import {
@@ -62,6 +64,7 @@ import {
 	hasMessage,
 	parseApiError
 } from '@/api/errors'
+import type { LessonResponse } from '@/api/generated/models'
 import { useSchoolTimezone } from '@/features/auth/api/use-organization-role'
 import { formatLessons } from '@/features/income/payment-options'
 import { useStudents } from '@/features/students/api/use-students'
@@ -77,20 +80,27 @@ type StudentOption = {
 
 /**
  * Registers a held lesson: one lesson is deducted from the student and the
- * teacher is credited by their hourly rate.
+ * teacher is credited by their hourly rate. With `lesson` it edits a held
+ * lesson instead; the student stays the same and the deduction is untouched.
  */
 export function LessonFormDialog({
+	lesson,
 	open,
 	onOpenChange
 }: {
+	lesson?: LessonResponse
 	open: boolean
 	onOpenChange: (open: boolean) => void
 }) {
+	const isEdit = Boolean(lesson)
 	const timezone = useSchoolTimezone()
 	const schema = useMemo(() => createLessonFormSchema(timezone), [timezone])
 	const defaultValues = useMemo(
-		() => getCreateDefaultValues(timezone),
-		[timezone]
+		() =>
+			lesson
+				? getEditDefaultValues(lesson, timezone)
+				: getCreateDefaultValues(timezone),
+		[lesson, timezone]
 	)
 	const form = useForm<LessonFormValues>({
 		resolver: zodResolver(schema),
@@ -98,12 +108,20 @@ export function LessonFormDialog({
 		reValidateMode: 'onChange'
 	})
 	const createLesson = useCreateLesson()
+	const updateLesson = useUpdateLesson(lesson?.teacher.id)
+	const mutation = isEdit ? updateLesson : createLesson
 	const [formError, setFormError] = useState<string | null>(null)
 
 	// Пересобираем форму при каждом открытии, чтобы время было актуальным
 	useEffect(() => {
-		if (open) form.reset(getCreateDefaultValues(timezone))
-	}, [open, form, timezone])
+		if (!open) return
+
+		form.reset(
+			lesson
+				? getEditDefaultValues(lesson, timezone)
+				: getCreateDefaultValues(timezone)
+		)
+	}, [open, form, lesson, timezone])
 
 	const students = useStudents()
 	const studentOptions = useMemo<StudentOption[]>(
@@ -122,15 +140,30 @@ export function LessonFormDialog({
 	)
 
 	const teachers = useTeachers('active')
-	const teacherOptions = useMemo(
-		() =>
-			(teachers.data?.items ?? []).map(teacher => ({
-				value: teacher.id,
-				label: teacher.fullName,
-				hourlyRate: Number(teacher.hourlyRate)
-			})),
-		[teachers.data]
-	)
+	const teacherOptions = useMemo(() => {
+		const options = (teachers.data?.items ?? []).map(teacher => ({
+			value: teacher.id,
+			label: teacher.fullName,
+			hourlyRate: Number(teacher.hourlyRate)
+		}))
+
+		// Ставка текущего преподавателя занятия уже зафиксирована, и он может быть в архиве
+		if (!lesson) return options
+
+		const current = {
+			value: lesson.teacher.id,
+			label: lesson.teacher.fullName,
+			hourlyRate: Number(lesson.teacherRate ?? 0)
+		}
+		const found = options.find(option => option.value === current.value)
+
+		if (!found) return [current, ...options]
+		if (lesson.teacherRate === null) return options
+
+		return options.map(option =>
+			option.value === current.value ? current : option
+		)
+	}, [teachers.data, lesson])
 
 	const [studentId, teacherId, durationMin] = useWatch({
 		control: form.control,
@@ -146,23 +179,23 @@ export function LessonFormDialog({
 		selectedTeacher && durationMin
 			? calculateTeacherPay(selectedTeacher.hourlyRate, durationMin)
 			: null
-	const noLessonsLeft = selectedStudent?.lessonsLeft === 0
+	const noLessonsLeft = !isEdit && selectedStudent?.lessonsLeft === 0
 
 	// Подставляем основного преподавателя ученика, пока его не выбрали вручную
 	useEffect(() => {
-		if (!selectedStudent?.teacherId) return
+		if (isEdit || !selectedStudent?.teacherId) return
 		if (form.getFieldState('teacherId').isDirty) return
 
 		form.setValue('teacherId', selectedStudent.teacherId, {
 			shouldValidate: form.formState.isSubmitted
 		})
-	}, [selectedStudent, form])
+	}, [isEdit, selectedStudent, form])
 
 	function handleOpenChange(nextOpen: boolean) {
 		onOpenChange(nextOpen)
 
 		if (!nextOpen) {
-			createLesson.reset()
+			mutation.reset()
 			setFormError(null)
 		}
 	}
@@ -170,6 +203,13 @@ export function LessonFormDialog({
 	function handleError(error: unknown) {
 		const apiError = parseApiError(error)
 
+		if (
+			apiError.status === 409 &&
+			hasMessage(apiError, 'Only held lessons')
+		) {
+			setFormError('Занятие уже отменено, изменить его нельзя')
+			return
+		}
 		if (
 			apiError.status === 409 &&
 			hasMessage(apiError, 'no paid lessons')
@@ -216,6 +256,28 @@ export function LessonFormDialog({
 	function handleValidSubmit(values: LessonFormValues) {
 		setFormError(null)
 
+		if (lesson) {
+			updateLesson.mutate(
+				{
+					id: lesson.id,
+					data: toUpdateLessonRequest(values, timezone)
+				},
+				{
+					onSuccess: updated => {
+						toast.success(
+							updated.teacherPay &&
+								updated.teacherPay !== lesson.teacherPay
+								? `Занятие изменено, начисление преподавателю — ${formatMoney(updated.teacherPay, updated.currency)}`
+								: 'Занятие изменено'
+						)
+						handleOpenChange(false)
+					},
+					onError: handleError
+				}
+			)
+			return
+		}
+
 		createLesson.mutate(
 			{ data: toCreateLessonRequest(values, timezone) },
 			{
@@ -243,14 +305,22 @@ export function LessonFormDialog({
 					<DialogHeader className='pr-8'>
 						<div className='flex items-start gap-3'>
 							<div className='bg-muted flex size-9 shrink-0 items-center justify-center rounded-lg'>
-								<GraduationCap aria-hidden='true' />
+								{isEdit ? (
+									<Pencil aria-hidden='true' />
+								) : (
+									<GraduationCap aria-hidden='true' />
+								)}
 							</div>
 							<div className='flex min-w-0 flex-col gap-1'>
-								<DialogTitle>Добавить занятие</DialogTitle>
+								<DialogTitle>
+									{isEdit
+										? 'Изменить занятие'
+										: 'Добавить занятие'}
+								</DialogTitle>
 								<DialogDescription>
-									У ученика спишется одно занятие, а
-									преподавателю начислится оплата по его
-									ставке.
+									{isEdit
+										? 'Списание у ученика не изменится. Начисление преподавателю пересчитается по длительности и ставке.'
+										: 'У ученика спишется одно занятие, а преподавателю начислится оплата по его ставке.'}
 								</DialogDescription>
 							</div>
 						</div>
@@ -258,84 +328,115 @@ export function LessonFormDialog({
 
 					<div className='min-h-0 overflow-y-auto overscroll-contain pr-1'>
 						<FieldGroup>
-							<Controller
-								name='studentId'
-								control={form.control}
-								render={({ field, fieldState }) => (
-									<Field data-invalid={fieldState.invalid}>
-										<FieldLabel htmlFor={field.name}>
-											Ученик
-										</FieldLabel>
-										<Combobox<StudentOption>
-											items={studentOptions}
-											value={selectedStudent ?? null}
-											onValueChange={option =>
-												field.onChange(
-													option?.value ?? ''
-												)
-											}
-											itemToStringValue={option =>
-												option.value
-											}
+							{lesson ? (
+								<Field>
+									<FieldLabel htmlFor='lesson-student'>
+										Ученик
+									</FieldLabel>
+									<Input
+										id='lesson-student'
+										value={
+											lesson.student
+												? getStudentFullName(
+														lesson.student
+													)
+												: '—'
+										}
+										readOnly
+										disabled
+										className='h-10'
+									/>
+									<FieldDescription>
+										Ученика сменить нельзя — отмените
+										занятие и внесите заново
+									</FieldDescription>
+								</Field>
+							) : (
+								<Controller
+									name='studentId'
+									control={form.control}
+									render={({ field, fieldState }) => (
+										<Field
+											data-invalid={fieldState.invalid}
 										>
-											<ComboboxInput
-												id={field.name}
-												placeholder={
-													students.isPending
-														? 'Загрузка…'
-														: 'Найти ученика'
+											<FieldLabel htmlFor={field.name}>
+												Ученик
+											</FieldLabel>
+											<Combobox<StudentOption>
+												items={studentOptions}
+												value={selectedStudent ?? null}
+												onValueChange={option =>
+													field.onChange(
+														option?.value ?? ''
+													)
 												}
-												aria-invalid={
-													fieldState.invalid
-												}
-												className='h-10 w-full'
-											/>
-											<ComboboxContent>
-												<ComboboxEmpty>
-													Ничего не найдено
-												</ComboboxEmpty>
-												<ComboboxList>
-													{(
-														option: StudentOption
-													) => (
-														<ComboboxItem
-															key={option.value}
-															value={option}
-														>
-															<span className='flex-1'>
-																{option.label}
-															</span>
-															<span className='text-muted-foreground text-xs tabular-nums'>
-																{
-																	option.lessonsLeft
-																}{' '}
-																ост.
-															</span>
-														</ComboboxItem>
-													)}
-												</ComboboxList>
-											</ComboboxContent>
-										</Combobox>
-										{selectedStudent &&
-										!fieldState.error ? (
-											<FieldDescription
-												className={
-													noLessonsLeft
-														? 'text-destructive'
-														: undefined
+												itemToStringValue={option =>
+													option.value
 												}
 											>
-												{noLessonsLeft
-													? 'У ученика нет оплаченных занятий — сначала внесите оплату'
-													: `Осталось ${formatLessons(selectedStudent.lessonsLeft)}`}
-											</FieldDescription>
-										) : null}
-										<FieldError
-											errors={[fieldState.error]}
-										/>
-									</Field>
-								)}
-							/>
+												<ComboboxInput
+													id={field.name}
+													placeholder={
+														students.isPending
+															? 'Загрузка…'
+															: 'Найти ученика'
+													}
+													aria-invalid={
+														fieldState.invalid
+													}
+													className='h-10 w-full'
+												/>
+												<ComboboxContent>
+													<ComboboxEmpty>
+														Ничего не найдено
+													</ComboboxEmpty>
+													<ComboboxList>
+														{(
+															option: StudentOption
+														) => (
+															<ComboboxItem
+																key={
+																	option.value
+																}
+																value={option}
+															>
+																<span className='flex-1'>
+																	{
+																		option.label
+																	}
+																</span>
+																<span className='text-muted-foreground text-xs tabular-nums'>
+																	{
+																		option.lessonsLeft
+																	}{' '}
+																	ост.
+																</span>
+															</ComboboxItem>
+														)}
+													</ComboboxList>
+												</ComboboxContent>
+											</Combobox>
+											{selectedStudent &&
+											!fieldState.error ? (
+												<FieldDescription
+													className={
+														noLessonsLeft
+															? 'text-destructive'
+															: undefined
+													}
+												>
+													{noLessonsLeft
+														? 'У ученика нет оплаченных занятий — сначала внесите оплату'
+														: `Осталось ${formatLessons(selectedStudent.lessonsLeft)}`}
+												</FieldDescription>
+											) : null}
+											<FieldError
+												errors={[fieldState.error]}
+											/>
+										</Field>
+									)}
+								/>
+							)}
 
 							<Controller
 								name='teacherId'
@@ -538,7 +639,9 @@ export function LessonFormDialog({
 								aria-live='polite'
 								className='bg-muted -mt-2 rounded-md px-3 py-2 text-sm'
 							>
-								Преподавателю начислится:{' '}
+								{isEdit
+									? 'Преподавателю будет начислено:'
+									: 'Преподавателю начислится:'}{' '}
 								<span className='font-semibold tabular-nums'>
 									{teacherPay === null
 										? '—'
@@ -615,11 +718,13 @@ export function LessonFormDialog({
 						</Button>
 						<Button
 							type='submit'
-							disabled={createLesson.isPending || noLessonsLeft}
+							disabled={mutation.isPending || noLessonsLeft}
 						>
-							{createLesson.isPending
+							{mutation.isPending
 								? 'Сохранение…'
-								: 'Добавить занятие'}
+								: isEdit
+									? 'Сохранить'
+									: 'Добавить занятие'}
 						</Button>
 					</DialogFooter>
 				</form>

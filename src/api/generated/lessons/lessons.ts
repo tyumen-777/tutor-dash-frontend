@@ -27,7 +27,8 @@ import type {
 	CancelLessonRequest,
 	CreateLessonRequest,
 	LessonListResponse,
-	LessonResponse
+	LessonResponse,
+	UpdateLessonRequest
 } from '../models'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -471,6 +472,108 @@ export function useLessonsControllerGetLesson<
 	return withQueryKey(query, queryOptions.queryKey)
 }
 
+/**
+ * Меняет тему, домашнее задание, время, длительность или преподавателя проведённого занятия. Начисление пересчитывается: при смене преподавателя — по его текущей ставке, иначе по ставке, зафиксированной при внесении. Списание у ученика не меняется; сменить ученика нельзя — отмените занятие и внесите заново.
+ * @summary Изменение занятия
+ */
+export const lessonsControllerUpdateLesson = (
+	id: string,
+	updateLessonRequest: BodyType<UpdateLessonRequest>,
+	options?: SecondParameter<typeof apiRequest>,
+	signal?: AbortSignal
+) => {
+	return apiRequest<LessonResponse>(
+		{
+			url: `/lessons/${id}`,
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			data: updateLessonRequest,
+			signal
+		},
+		options
+	)
+}
+
+export const getLessonsControllerUpdateLessonMutationKey = () =>
+	['lessonsControllerUpdateLesson'] as const
+
+export const getLessonsControllerUpdateLessonMutationOptions = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(options?: {
+	mutation?: UseMutationOptions<
+		Awaited<ReturnType<typeof lessonsControllerUpdateLesson>>,
+		TError,
+		LessonsControllerUpdateLessonMutationVariables,
+		TContext
+	>
+	request?: SecondParameter<typeof apiRequest>
+}): UseMutationOptions<
+	Awaited<ReturnType<typeof lessonsControllerUpdateLesson>>,
+	TError,
+	LessonsControllerUpdateLessonMutationVariables,
+	TContext
+> => {
+	const mutationKey = getLessonsControllerUpdateLessonMutationKey()
+	const { mutation: mutationOptions, request: requestOptions } = options
+		? options.mutation &&
+			'mutationKey' in options.mutation &&
+			options.mutation.mutationKey
+			? options
+			: { ...options, mutation: { ...options.mutation, mutationKey } }
+		: { mutation: { mutationKey }, request: undefined }
+
+	const mutationFn: MutationFunction<
+		Awaited<ReturnType<typeof lessonsControllerUpdateLesson>>,
+		LessonsControllerUpdateLessonMutationVariables
+	> = props => {
+		const { id, data } = props ?? {}
+
+		return lessonsControllerUpdateLesson(id, data, requestOptions)
+	}
+
+	return { mutationFn, ...mutationOptions }
+}
+
+export type LessonsControllerUpdateLessonMutationResult = NonNullable<
+	Awaited<ReturnType<typeof lessonsControllerUpdateLesson>>
+>
+export type LessonsControllerUpdateLessonMutationBody =
+	BodyType<UpdateLessonRequest>
+export type LessonsControllerUpdateLessonMutationError = ErrorType<void>
+export type LessonsControllerUpdateLessonMutationVariables = {
+	id: string
+	data: BodyType<UpdateLessonRequest>
+}
+
+/**
+ * @summary Изменение занятия
+ */
+export const useLessonsControllerUpdateLesson = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(
+	options?: {
+		mutation?: UseMutationOptions<
+			Awaited<ReturnType<typeof lessonsControllerUpdateLesson>>,
+			TError,
+			LessonsControllerUpdateLessonMutationVariables,
+			TContext
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseMutationResult<
+	Awaited<ReturnType<typeof lessonsControllerUpdateLesson>>,
+	TError,
+	LessonsControllerUpdateLessonMutationVariables,
+	TContext
+> => {
+	return useMutation(
+		getLessonsControllerUpdateLessonMutationOptions(options),
+		queryClient
+	)
+}
 /**
  * Переводит проведённое занятие в статус «Отменено»: занятие возвращается ученику в пакет, начисление преподавателю больше не учитывается. Занятие остаётся в истории.
  * @summary Отмена занятия

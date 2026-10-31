@@ -1,10 +1,14 @@
 import dayjs from 'dayjs'
 import { z } from 'zod'
 
-import { fromSchoolTime, schoolNow } from '@/lib/school-time'
+import { fromSchoolTime, schoolNow, toSchoolTime } from '@/lib/school-time'
 
-import { LESSON_DURATIONS } from './lesson-options'
-import type { CreateLessonRequest } from '@/api/generated/models'
+import { LESSON_DURATIONS, type LessonDuration } from './lesson-options'
+import type {
+	CreateLessonRequest,
+	LessonResponse,
+	UpdateLessonRequest
+} from '@/api/generated/models'
 
 const lessonFieldsSchema = z.object({
 	studentId: z.string().min(1, 'Выберите ученика'),
@@ -48,6 +52,45 @@ export function getCreateDefaultValues(
 		durationMin: 60,
 		topic: '',
 		homework: ''
+	}
+}
+
+export function getEditDefaultValues(
+	lesson: LessonResponse,
+	timezone: string
+): Partial<LessonFormValues> {
+	const startsAt = toSchoolTime(lesson.startsAt, timezone)
+
+	return {
+		studentId: lesson.student?.id ?? '',
+		teacherId: lesson.teacher.id,
+		date: startsAt.format('YYYY-MM-DD'),
+		time: startsAt.format('HH:mm'),
+		durationMin: LESSON_DURATIONS.includes(
+			lesson.durationMin as LessonDuration
+		)
+			? (lesson.durationMin as LessonDuration)
+			: undefined,
+		topic: lesson.topic ?? '',
+		homework: lesson.homework ?? ''
+	}
+}
+
+// Ученик не меняется; пустые тема и ДЗ очищают поля
+export function toUpdateLessonRequest(
+	values: LessonFormValues,
+	timezone: string
+): UpdateLessonRequest {
+	return {
+		teacherId: values.teacherId,
+		startsAt: fromSchoolTime(
+			values.date,
+			values.time,
+			timezone
+		).toISOString(),
+		durationMin: values.durationMin,
+		topic: values.topic,
+		homework: values.homework
 	}
 }
 

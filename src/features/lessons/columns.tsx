@@ -31,10 +31,12 @@ const columnHelper = createColumnHelper<DataTableFeatures, LessonResponse>()
 export function getColumns({
 	canManage,
 	timezone,
+	onEdit,
 	onCancel
 }: {
 	canManage: boolean
 	timezone: string
+	onEdit: (lesson: LessonResponse) => void
 	onCancel: (lesson: LessonResponse) => void
 }) {
 	return columnHelper.columns([
@@ -163,7 +165,8 @@ export function getColumns({
 			id: 'actions',
 			cell: ({ row }) => {
 				const lesson = row.original
-				const cancelable = canManage && lesson.status === 'COMPLETED'
+				// Изменить и отменить можно только проведённое занятие
+				const editable = canManage && lesson.status === 'COMPLETED'
 
 				return (
 					<DropdownMenu>
@@ -200,9 +203,14 @@ export function getColumns({
 							>
 								Профиль преподавателя
 							</DropdownMenuItem>
-							{cancelable ? (
+							{editable ? (
 								<>
 									<DropdownMenuSeparator />
+									<DropdownMenuItem
+										onClick={() => onEdit(lesson)}
+									>
+										Изменить занятие
+									</DropdownMenuItem>
 									<DropdownMenuItem
 										variant='destructive'
 										onClick={() => onCancel(lesson)}
