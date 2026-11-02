@@ -5,8 +5,8 @@ import { useDashboardSummary } from '../api/use-dashboard-summary'
 import { ActionPrioritiesCard } from './action-priorities-card'
 import { DayScheduleCard } from './day-schedule-card'
 import { HeroSection } from './hero-section'
+import { LowBalanceCard } from './low-balance-card'
 import { MetricsGrid } from './metrics-grid'
-import { SalesPipelineCard } from './sales-pipeline-card'
 import { StudentHealthCard } from './student-health-card'
 import { TeachersWorkloadCard } from './teachers-workload-card'
 
@@ -33,10 +33,9 @@ export default function MainPage() {
 
 				<MetricsGrid summary={summary} />
 
-				<section className='grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]'>
-					<SalesPipelineCard />
-					<DayScheduleCard lessons={summary?.todayLessons} />
-				</section>
+				<LowBalanceCard summary={summary} />
+
+				<DayScheduleCard lessons={summary?.todayLessons} />
 
 				<section className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]'>
 					<TeachersWorkloadCard teachers={summary?.teachers} />

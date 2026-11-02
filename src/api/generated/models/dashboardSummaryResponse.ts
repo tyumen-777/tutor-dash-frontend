@@ -45,6 +45,6 @@ export interface DashboardSummaryResponse {
 	todayLessons: DashboardSummaryResponseTodayLessonsItem[]
 	/** Active teachers by completed lessons this month. */
 	teachers: DashboardSummaryResponseTeachersItem[]
-	/** Up to 5 active students with the fewest lessons left. */
+	/** Up to 10 active students with the fewest lessons left. */
 	lowBalanceStudents: DashboardSummaryResponseLowBalanceStudentsItem[]
 }
