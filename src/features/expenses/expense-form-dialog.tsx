@@ -62,6 +62,7 @@ import {
 } from '@/api/errors'
 import type { ExpenseResponse } from '@/api/generated/models'
 import { paymentMethodOptions } from '@/features/income/payment-options'
+import { pluralize } from '@/features/main/format'
 import { useTeachers } from '@/features/teachers/api/use-teachers'
 
 type Option = { readonly label: string; readonly value: string }
@@ -72,7 +73,8 @@ function OptionsSelect({
 	value,
 	onValueChange,
 	placeholder,
-	invalid
+	invalid,
+	disabled
 }: {
 	id: string
 	options: readonly Option[]
@@ -80,12 +82,14 @@ function OptionsSelect({
 	onValueChange: (value: string | null) => void
 	placeholder: string
 	invalid: boolean
+	disabled?: boolean
 }) {
 	return (
 		<Select
 			items={options}
 			value={value ?? null}
 			onValueChange={onValueChange}
+			disabled={disabled}
 		>
 			<SelectTrigger
 				id={id}
@@ -120,6 +124,8 @@ export function ExpenseFormDialog({
 	expense?: ExpenseResponse
 }) {
 	const isEdit = !!expense
+	// Сумма выплаты преподавателю равна начислениям за её занятия
+	const isPayout = (expense?.payoutLessonsCount ?? 0) > 0
 	const defaultValues = useMemo(
 		() =>
 			expense ? getEditDefaultValues(expense) : getCreateDefaultValues(),
@@ -185,6 +191,12 @@ export function ExpenseFormDialog({
 			})
 			return
 		}
+		if (apiError.status === 409 && hasMessage(apiError, 'Payout')) {
+			setFormError(
+				'Сумму, категорию, преподавателя и статус выплаты изменить нельзя. Отмените выплату и проведите заново.'
+			)
+			return
+		}
 		if (apiError.status === 404 || apiError.status === 409) {
 			setFormError('Расход изменился или был отменён. Обновите страницу.')
 			return
@@ -239,7 +251,9 @@ export function ExpenseFormDialog({
 										: 'Новый расход'}
 								</DialogTitle>
 								<DialogDescription>
-									Укажите сумму и категорию платежа.
+									{expense && isPayout
+										? `Выплата преподавателю за ${pluralize(expense.payoutLessonsCount, { one: 'занятие', few: 'занятия', many: 'занятий' })}. Сумма, категория, преподаватель и статус считаются по занятиям и не меняются.`
+										: 'Укажите сумму и категорию платежа.'}
 								</DialogDescription>
 							</div>
 						</div>
@@ -317,6 +331,7 @@ export function ExpenseFormDialog({
 													min={0}
 													step='0.01'
 													placeholder='15000'
+													disabled={isPayout}
 													aria-invalid={
 														fieldState.invalid
 													}
@@ -353,6 +368,7 @@ export function ExpenseFormDialog({
 													}
 													placeholder='Выберите категорию'
 													invalid={fieldState.invalid}
+													disabled={isPayout}
 												/>
 												<FieldError
 													errors={[fieldState.error]}
@@ -406,6 +422,7 @@ export function ExpenseFormDialog({
 															aria-invalid={
 																fieldState.invalid
 															}
+															disabled={isPayout}
 															className='h-10 w-full'
 														/>
 														<ComboboxContent>
@@ -543,6 +560,7 @@ export function ExpenseFormDialog({
 													}
 													placeholder='Выберите статус'
 													invalid={fieldState.invalid}
+													disabled={isPayout}
 												/>
 												<FieldError
 													errors={[fieldState.error]}

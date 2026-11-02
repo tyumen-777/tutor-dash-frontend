@@ -22,6 +22,7 @@ import {
 	parseApiError
 } from '@/api/errors'
 import type { ExpenseResponse } from '@/api/generated/models'
+import { pluralize } from '@/features/main/format'
 
 export function CancelExpenseDialog({
 	expense,
@@ -78,6 +79,9 @@ export function CancelExpenseDialog({
 								{formatMoney(expense.amount, expense.currency)}.
 								Расход останется в истории со статусом «Отменён»
 								и перестанет учитываться в итогах.
+								{expense.payoutLessonsCount > 0
+									? ` ${pluralize(expense.payoutLessonsCount, { one: 'занятие', few: 'занятия', many: 'занятий' })} преподавателя снова станут невыплаченными, и их можно будет изменить.`
+									: null}
 							</DialogDescription>
 						</div>
 					</div>

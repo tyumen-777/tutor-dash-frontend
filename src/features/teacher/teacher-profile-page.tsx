@@ -50,7 +50,11 @@ import type {
 	StudentResponse,
 	TeacherResponse
 } from '@/api/generated/models'
-import { useSchoolTimezone } from '@/features/auth/api/use-organization-role'
+import {
+	useCanManageExpenses,
+	useSchoolTimezone
+} from '@/features/auth/api/use-organization-role'
+import { usePayoutReport } from '@/features/payouts/api/use-payouts'
 import { getStudentFullName } from '@/features/students/format'
 import { formatDate, formatHourlyRate } from '@/features/teachers/format'
 import { TeacherActions } from '@/features/teachers/teacher-actions'
@@ -62,6 +66,35 @@ function getMonthPeriod(month: Date): MonthPeriod {
 		from: start.format('YYYY-MM-DD'),
 		to: start.endOf('month').format('YYYY-MM-DD')
 	}
+}
+
+/**
+ * Pay for held lessons up to the end of the month that is not paid out yet.
+ * The payout report is available only to roles with access to expenses.
+ */
+function UnpaidStat({
+	teacherId,
+	period
+}: {
+	teacherId: string
+	period: MonthPeriod
+}) {
+	const { data } = usePayoutReport({ ...period, teacherId })
+	const row = data?.teachers[0]
+
+	return (
+		<Stat
+			label='Не выплачено'
+			value={
+				data
+					? formatMoney(
+							row ? Number(row.due) + Number(row.dueBefore) : 0,
+							data.currency
+						)
+					: '—'
+			}
+		/>
+	)
 }
 
 type TeacherProfilePageProps = {
@@ -83,6 +116,7 @@ function ProfileHeader({
 }) {
 	const monthLabel = dayjs(month).locale('ru').format('MMMM')
 	const summary = lessons?.summary
+	const canSeePayouts = useCanManageExpenses()
 
 	return (
 		<section className='overflow-hidden rounded-lg border border-[#C9D6CC] bg-[#F7F8F3]'>
@@ -174,7 +208,13 @@ function ProfileHeader({
 						</p>
 					</div>
 
-					<div className='grid min-w-0 gap-3 sm:grid-cols-3'>
+					<div
+						className={
+							canSeePayouts
+								? 'grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4'
+								: 'grid min-w-0 gap-3 sm:grid-cols-3'
+						}
+					>
 						<Stat
 							label={`Заработок · ${monthLabel}`}
 							value={
@@ -199,6 +239,12 @@ function ProfileHeader({
 									: String(studentsCount)
 							}
 						/>
+						{canSeePayouts ? (
+							<UnpaidStat
+								teacherId={teacher.id}
+								period={getMonthPeriod(month)}
+							/>
+						) : null}
 					</div>
 				</div>
 			</div>

@@ -26,6 +26,7 @@ import {
 import { formatDate } from './format'
 import type { ExpenseResponse } from '@/api/generated/models'
 import { PAYMENT_METHOD_LABELS } from '@/features/income/payment-options'
+import { pluralize } from '@/features/main/format'
 
 const columnHelper = createColumnHelper<DataTableFeatures, ExpenseResponse>()
 
@@ -90,6 +91,16 @@ export function getColumns({
 			cell: ({ row }) => (
 				<div className='max-w-72 min-w-48 whitespace-normal'>
 					<p>{row.original.description}</p>
+					{row.original.payoutLessonsCount > 0 ? (
+						<Badge variant='success' className='mt-1'>
+							Выплата ·{' '}
+							{pluralize(row.original.payoutLessonsCount, {
+								one: 'занятие',
+								few: 'занятия',
+								many: 'занятий'
+							})}
+						</Badge>
+					) : null}
 					{row.original.comment ? (
 						<p className='text-muted-foreground text-xs'>
 							{row.original.comment}

@@ -52,6 +52,12 @@ export interface ExpenseResponse {
 	 * @nullable
 	 */
 	teacher: ExpenseResponseTeacher
+	/**
+	 * Lessons paid by this teacher payout; 0 for other expenses.
+	 * @minimum -9007199254740991
+	 * @maximum 9007199254740991
+	 */
+	payoutLessonsCount: number
 	/** User who registered the expense. */
 	createdBy: ExpenseResponseCreatedBy
 	/**

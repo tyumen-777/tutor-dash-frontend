@@ -10,6 +10,7 @@ import {
 	useLessonsControllerUpdateLesson
 } from '@/api/generated/lessons/lessons'
 import type { LessonResponse } from '@/api/generated/models'
+import { getPayoutsControllerGetReportQueryKey } from '@/api/generated/payouts/payouts'
 import {
 	getStudentsControllerGetStudentBalanceQueryKey,
 	getStudentsControllerGetStudentQueryKey,
@@ -19,7 +20,8 @@ import { getTeachersControllerGetTeacherQueryKey } from '@/api/generated/teacher
 
 /**
  * A lesson changes the student's lesson balance and the teacher's earnings,
- * so both profiles and the student list are refreshed together with lessons.
+ * so both profiles, the student list and the payout report are refreshed
+ * together with lessons.
  */
 function useLessonCache() {
 	const queryClient = useQueryClient()
@@ -28,6 +30,7 @@ function useLessonCache() {
 		Promise.all(
 			[
 				getLessonsControllerListLessonsQueryKey(),
+				getPayoutsControllerGetReportQueryKey(),
 				getStudentsControllerListStudentsQueryKey(),
 				getTeachersControllerGetTeacherQueryKey(lesson.teacher.id),
 				...(previousTeacherId && previousTeacherId !== lesson.teacher.id

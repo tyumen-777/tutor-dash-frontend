@@ -93,6 +93,8 @@ export function LessonFormDialog({
 	onOpenChange: (open: boolean) => void
 }) {
 	const isEdit = Boolean(lesson)
+	// У выплаченного занятия меняются только тема и домашнее задание
+	const paidOut = Boolean(lesson?.payoutExpenseId)
 	const timezone = useSchoolTimezone()
 	const schema = useMemo(() => createLessonFormSchema(timezone), [timezone])
 	const defaultValues = useMemo(
@@ -318,9 +320,11 @@ export function LessonFormDialog({
 										: 'Добавить занятие'}
 								</DialogTitle>
 								<DialogDescription>
-									{isEdit
-										? 'Списание у ученика не изменится. Начисление преподавателю пересчитается по длительности и ставке.'
-										: 'У ученика спишется одно занятие, а преподавателю начислится оплата по его ставке.'}
+									{paidOut
+										? 'Занятие вошло в выплату преподавателю: можно изменить только тему и домашнее задание. Чтобы изменить остальное, отмените выплату в расходах.'
+										: isEdit
+											? 'Списание у ученика не изменится. Начисление преподавателю пересчитается по длительности и ставке.'
+											: 'У ученика спишется одно занятие, а преподавателю начислится оплата по его ставке.'}
 								</DialogDescription>
 							</div>
 						</div>
@@ -448,6 +452,7 @@ export function LessonFormDialog({
 										</FieldLabel>
 										<Select
 											items={teacherOptions}
+											disabled={paidOut}
 											value={field.value || null}
 											onValueChange={value =>
 												field.onChange(value ?? '')
@@ -523,6 +528,7 @@ export function LessonFormDialog({
 												max={schoolNow(timezone).format(
 													'YYYY-MM-DD'
 												)}
+												disabled={paidOut}
 												aria-invalid={
 													fieldState.invalid
 												}
@@ -550,6 +556,7 @@ export function LessonFormDialog({
 												id={field.name}
 												type='time'
 												step={300}
+												disabled={paidOut}
 												aria-invalid={
 													fieldState.invalid
 												}
@@ -574,6 +581,7 @@ export function LessonFormDialog({
 											</FieldLabel>
 											<Select
 												items={lessonDurationOptions}
+												disabled={paidOut}
 												value={
 													field.value
 														? String(field.value)

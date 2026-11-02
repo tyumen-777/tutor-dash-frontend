@@ -5,6 +5,7 @@
  * API documentation for Tutor Dash
  * OpenAPI spec version: 1.0
  */
+import type { ListLessonsQueryPaidOut } from './listLessonsQueryPaidOut'
 import type { ListLessonsQueryStatus } from './listLessonsQueryStatus'
 
 /**
@@ -33,6 +34,8 @@ export interface ListLessonsQuery {
 	studentId?: string
 	/** Filter by lesson status. Without it deleted lessons are left out; DELETED lists only them. */
 	status?: ListLessonsQueryStatus
+	/** true — only lessons included in a teacher payout, false — only lessons not paid out yet. */
+	paidOut?: ListLessonsQueryPaidOut
 	/**
 	 * Page size.
 	 * @minimum 1

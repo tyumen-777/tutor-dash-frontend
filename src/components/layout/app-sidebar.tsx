@@ -73,7 +73,8 @@ const navigation: (NavigationLink | NavigationGroup)[] = [
 		icon: WalletCards,
 		children: [
 			{ title: 'Расходы', href: '/expenses' },
-			{ title: 'Поступления', href: '/income' }
+			{ title: 'Поступления', href: '/income' },
+			{ title: 'Выплаты', href: '/payouts' }
 		]
 	},
 	{ title: 'Расписание', href: '/calendar', icon: CalendarDays },

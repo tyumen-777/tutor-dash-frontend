@@ -8,14 +8,24 @@ import {
 	useExpensesControllerCreateExpense,
 	useExpensesControllerUpdateExpense
 } from '@/api/generated/expenses/expenses'
+import { getLessonsControllerListLessonsQueryKey } from '@/api/generated/lessons/lessons'
+import { getPayoutsControllerGetReportQueryKey } from '@/api/generated/payouts/payouts'
 
+/**
+ * Canceling a teacher payout marks its lessons unpaid again, so the payout
+ * report and lessons are refreshed together with expenses.
+ */
 function useExpenseCache() {
 	const queryClient = useQueryClient()
 
 	return () =>
-		queryClient.invalidateQueries({
-			queryKey: getExpensesControllerListExpensesQueryKey()
-		})
+		Promise.all(
+			[
+				getExpensesControllerListExpensesQueryKey(),
+				getPayoutsControllerGetReportQueryKey(),
+				getLessonsControllerListLessonsQueryKey()
+			].map(queryKey => queryClient.invalidateQueries({ queryKey }))
+		)
 }
 
 export function useCreateExpense() {

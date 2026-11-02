@@ -142,6 +142,11 @@ export function getColumns({
 								ставка {formatMoney(teacherRate, currency)}/ч
 							</p>
 						) : null}
+						{row.original.payoutExpenseId ? (
+							<Badge variant='success' className='mt-1'>
+								Выплачено
+							</Badge>
+						) : null}
 					</div>
 				)
 			}
@@ -187,6 +192,9 @@ export function getColumns({
 				const lesson = row.original
 				// Изменить и отменить можно только проведённое занятие
 				const editable = canManage && lesson.status === 'COMPLETED'
+				// Выплаченное занятие нельзя отменить или удалить, пока
+				// не отменена выплата
+				const paidOut = lesson.payoutExpenseId !== null
 				const deletable =
 					canDelete &&
 					(lesson.status === 'COMPLETED' ||
@@ -239,6 +247,7 @@ export function getColumns({
 									</DropdownMenuItem>
 									<DropdownMenuItem
 										variant='destructive'
+										disabled={paidOut}
 										onClick={() => onCancel(lesson)}
 									>
 										Отменить занятие
@@ -248,10 +257,17 @@ export function getColumns({
 							{deletable ? (
 								<DropdownMenuItem
 									variant='destructive'
+									disabled={paidOut}
 									onClick={() => onDelete(lesson)}
 								>
 									Удалить занятие
 								</DropdownMenuItem>
+							) : null}
+							{paidOut && (editable || deletable) ? (
+								<p className='text-muted-foreground max-w-48 px-2 py-1.5 text-xs'>
+									Занятие вошло в выплату. Чтобы отменить или
+									удалить его, отмените выплату в расходах.
+								</p>
 							) : null}
 						</DropdownMenuContent>
 					</DropdownMenu>

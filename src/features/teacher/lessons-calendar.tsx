@@ -151,6 +151,11 @@ export function LessonsCalendar({
 													lesson.teacherPay,
 													lesson.currency
 												)}
+												{lesson.payoutExpenseId ? (
+													<span className='ml-1 text-xs font-normal text-[#1F5A3D]'>
+														· выплачено
+													</span>
+												) : null}
 											</span>
 										) : null}
 									</div>
