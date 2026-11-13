@@ -3,6 +3,8 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { SESSION_COOKIE_NAMES } from '@/features/auth/session-cookie'
 
 const LOGIN_PATH = '/login'
+// Приглашение открывают ещё без учётной записи
+const PUBLIC_PATHS = [LOGIN_PATH, '/invite']
 
 /**
  * Optimistic auth check: redirects to the login page when there is no session
@@ -11,7 +13,11 @@ const LOGIN_PATH = '/login'
 export function proxy(request: NextRequest) {
 	const { pathname } = request.nextUrl
 
-	if (pathname === LOGIN_PATH || pathname.startsWith(`${LOGIN_PATH}/`)) {
+	const isPublicPath = PUBLIC_PATHS.some(
+		path => pathname === path || pathname.startsWith(`${path}/`)
+	)
+
+	if (isPublicPath) {
 		return NextResponse.next()
 	}
 

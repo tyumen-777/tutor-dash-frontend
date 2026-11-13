@@ -5,6 +5,7 @@
  * API documentation for Tutor Dash
  * OpenAPI spec version: 1.0
  */
+import type { InvitationResponseTeacher } from './invitationResponseTeacher'
 import type { OrganizationSummary } from './organizationSummary'
 
 /**
@@ -28,4 +29,11 @@ export interface InvitationResponse {
 	 */
 	expiresAt: string
 	organization: OrganizationSummary
+	/**
+	 * Teacher profile the invitation is linked to (personal cabinet).
+	 * @nullable
+	 */
+	teacher: InvitationResponseTeacher
+	/** Whether a user with the invited email already exists: then they sign in instead of setting a password. */
+	accountExists: boolean
 }

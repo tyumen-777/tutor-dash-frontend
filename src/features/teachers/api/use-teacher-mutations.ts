@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import { parseApiError } from '@/api/errors'
 import type { TeacherResponse } from '@/api/generated/models'
+import { getTeacherAccessControllerGetAccessQueryKey } from '@/api/generated/teacher-access/teacher-access'
 import {
 	getTeachersControllerGetTeacherQueryKey,
 	getTeachersControllerListTeachersQueryKey,
@@ -22,6 +23,12 @@ function useTeacherCache() {
 				getTeachersControllerGetTeacherQueryKey(teacher.id),
 				teacher
 			)
+			// Архивация закрывает доступ в личный кабинет
+			void queryClient.invalidateQueries({
+				queryKey: getTeacherAccessControllerGetAccessQueryKey(
+					teacher.id
+				)
+			})
 			return queryClient.invalidateQueries({
 				queryKey: getTeachersControllerListTeachersQueryKey()
 			})

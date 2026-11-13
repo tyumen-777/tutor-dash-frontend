@@ -12,6 +12,7 @@ import {
 	PanelLeftClose,
 	PanelLeftOpen,
 	Settings,
+	UserRound,
 	UsersRound,
 	WalletCards
 } from 'lucide-react'
@@ -46,6 +47,8 @@ import {
 	useSidebar
 } from '@/components/ui/sidebar'
 
+import { TeacherRouteGuard } from './teacher-route-guard'
+import { useIsTeacherOnly } from '@/features/auth/api/use-organization-role'
 import { LogoutButton } from '@/features/auth/components/logout-button'
 
 type NavigationLink = {
@@ -87,6 +90,13 @@ const navigation: (NavigationLink | NavigationGroup)[] = [
 			{ title: 'Компания', href: '/settings/company' }
 		]
 	}
+]
+
+// Преподаватель работает только со своим кабинетом, занятиями и учениками
+const teacherNavigation: NavigationLink[] = [
+	{ title: 'Мой кабинет', href: '/me', icon: UserRound },
+	{ title: 'Занятия', href: '/lessons', icon: GraduationCap },
+	{ title: 'Мои ученики', href: '/students', icon: UsersRound }
 ]
 
 function isActiveRoute(pathname: string, href: string) {
@@ -164,10 +174,11 @@ function SidebarNavigationGroup({
 
 function SidebarNavigation({ pathname }: { pathname: string }) {
 	const { setOpenMobile } = useSidebar()
+	const items = useIsTeacherOnly() ? teacherNavigation : navigation
 
 	return (
 		<SidebarMenu className='gap-1'>
-			{navigation.map(item => {
+			{items.map(item => {
 				const Icon = item.icon
 
 				if ('children' in item) {
@@ -293,7 +304,9 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
 						</p>
 					</div>
 				</header>
-				<div className='flex min-h-svh flex-1 flex-col'>{children}</div>
+				<div className='flex min-h-svh flex-1 flex-col'>
+					<TeacherRouteGuard>{children}</TeacherRouteGuard>
+				</div>
 			</SidebarInset>
 		</SidebarProvider>
 	)

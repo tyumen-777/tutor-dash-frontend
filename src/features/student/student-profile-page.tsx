@@ -43,6 +43,7 @@ import type { StudentPreferredTime } from './types'
 import type { StudentResponse } from '@/api/generated/models'
 import {
 	useCanManageFinance,
+	useIsTeacherOnly,
 	useSchoolTimezone
 } from '@/features/auth/api/use-organization-role'
 import {
@@ -355,7 +356,7 @@ function Lessons({ studentId }: { studentId: string }) {
 											</TableCell>
 											<TableCell>
 												<Link
-													href={`/teachers/${lesson.teacher.id}`}
+													href={`/teacher/${lesson.teacher.id}`}
 													className='hover:underline'
 												>
 													{lesson.teacher.fullName}
@@ -659,6 +660,7 @@ function ProfileSkeleton() {
 
 function StudentProfileContent({ studentId }: StudentProfilePageProps) {
 	const { data: student, isPending, error } = useStudent(studentId)
+	const isTeacherOnly = useIsTeacherOnly()
 
 	if (isPending) {
 		return <ProfileSkeleton />
@@ -686,7 +688,8 @@ function StudentProfileContent({ studentId }: StudentProfilePageProps) {
 				<div className='grid min-w-0 gap-4'>
 					<Contacts student={student} />
 					<Lessons studentId={student.id} />
-					<Payments studentId={student.id} />
+					{/* Платежи — финансы школы, преподавателю они не показываются */}
+					{isTeacherOnly ? null : <Payments studentId={student.id} />}
 				</div>
 				<div className='grid min-w-0 content-start gap-4'>
 					<Notes student={student} />

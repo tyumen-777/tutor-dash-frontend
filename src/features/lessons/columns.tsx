@@ -30,20 +30,27 @@ const columnHelper = createColumnHelper<DataTableFeatures, LessonResponse>()
 
 export function getColumns({
 	canManage,
+	canEdit = canManage,
 	canDelete,
+	showTeacher = true,
 	timezone,
 	onEdit,
 	onCancel,
 	onDelete
 }: {
+	/** Edit and cancel held lessons. */
 	canManage: boolean
+	/** Edit only (a teacher edits topic and homework of own lessons). */
+	canEdit?: boolean
 	canDelete: boolean
+	/** A teacher sees only own lessons, so the teacher column is noise. */
+	showTeacher?: boolean
 	timezone: string
 	onEdit: (lesson: LessonResponse) => void
 	onCancel: (lesson: LessonResponse) => void
 	onDelete: (lesson: LessonResponse) => void
 }) {
-	return columnHelper.columns([
+	const columns = columnHelper.columns([
 		columnHelper.accessor('startsAt', {
 			header: ({ column }) => (
 				<Button
@@ -191,7 +198,7 @@ export function getColumns({
 			cell: ({ row }) => {
 				const lesson = row.original
 				// Изменить и отменить можно только проведённое занятие
-				const editable = canManage && lesson.status === 'COMPLETED'
+				const editable = canEdit && lesson.status === 'COMPLETED'
 				// Выплаченное занятие нельзя отменить или удалить, пока
 				// не отменена выплата
 				const paidOut = lesson.payoutExpenseId !== null
@@ -226,15 +233,17 @@ export function getColumns({
 									Профиль ученика
 								</DropdownMenuItem>
 							) : null}
-							<DropdownMenuItem
-								render={
-									<Link
-										href={`/teacher/${lesson.teacher.id}`}
-									/>
-								}
-							>
-								Профиль преподавателя
-							</DropdownMenuItem>
+							{showTeacher ? (
+								<DropdownMenuItem
+									render={
+										<Link
+											href={`/teacher/${lesson.teacher.id}`}
+										/>
+									}
+								>
+									Профиль преподавателя
+								</DropdownMenuItem>
+							) : null}
 							{editable || deletable ? (
 								<DropdownMenuSeparator />
 							) : null}
@@ -245,13 +254,15 @@ export function getColumns({
 									>
 										Изменить занятие
 									</DropdownMenuItem>
-									<DropdownMenuItem
-										variant='destructive'
-										disabled={paidOut}
-										onClick={() => onCancel(lesson)}
-									>
-										Отменить занятие
-									</DropdownMenuItem>
+									{canManage ? (
+										<DropdownMenuItem
+											variant='destructive'
+											disabled={paidOut}
+											onClick={() => onCancel(lesson)}
+										>
+											Отменить занятие
+										</DropdownMenuItem>
+									) : null}
 								</>
 							) : null}
 							{deletable ? (
@@ -263,7 +274,8 @@ export function getColumns({
 									Удалить занятие
 								</DropdownMenuItem>
 							) : null}
-							{paidOut && (editable || deletable) ? (
+							{paidOut &&
+							((editable && canManage) || deletable) ? (
 								<p className='text-muted-foreground max-w-48 px-2 py-1.5 text-xs'>
 									Занятие вошло в выплату. Чтобы отменить или
 									удалить его, отмените выплату в расходах.
@@ -275,4 +287,8 @@ export function getColumns({
 			}
 		})
 	])
+
+	return showTeacher
+		? columns
+		: columns.filter(column => column.id !== 'teacher')
 }

@@ -9,6 +9,7 @@ import {
 	useLessonsControllerDeleteLesson,
 	useLessonsControllerUpdateLesson
 } from '@/api/generated/lessons/lessons'
+import { getMeControllerGetEarningsQueryKey } from '@/api/generated/me/me'
 import type { LessonResponse } from '@/api/generated/models'
 import { getPayoutsControllerGetReportQueryKey } from '@/api/generated/payouts/payouts'
 import {
@@ -31,6 +32,7 @@ function useLessonCache() {
 			[
 				getLessonsControllerListLessonsQueryKey(),
 				getPayoutsControllerGetReportQueryKey(),
+				getMeControllerGetEarningsQueryKey(),
 				getStudentsControllerListStudentsQueryKey(),
 				getTeachersControllerGetTeacherQueryKey(lesson.teacher.id),
 				...(previousTeacherId && previousTeacherId !== lesson.teacher.id

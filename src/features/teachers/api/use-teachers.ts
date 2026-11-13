@@ -12,12 +12,14 @@ import {
 // orval не генерирует query-параметры для этого эндпоинта, поэтому они
 // передаются через axios. Бэкенд отдаёт не больше 100 записей за раз —
 // таблица фильтрует и листает на клиенте.
-export function useTeachers(status: ListTeachersQueryStatus) {
+export function useTeachers(status: ListTeachersQueryStatus, enabled = true) {
 	const params: ListTeachersQuery = { status, limit: 100 }
 
 	return useTeachersControllerListTeachers({
 		query: {
-			queryKey: [...getTeachersControllerListTeachersQueryKey(), status]
+			queryKey: [...getTeachersControllerListTeachersQueryKey(), status],
+			// Преподавателю список коллег недоступен
+			enabled
 		},
 		request: { params }
 	})

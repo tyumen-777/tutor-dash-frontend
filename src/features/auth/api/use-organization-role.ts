@@ -2,7 +2,7 @@
 
 import { getBrowserTimezone } from '@/lib/school-time'
 
-import { parseOrganizationRoles } from '../organization-role'
+import { isTeacherOnly, parseOrganizationRoles } from '../organization-role'
 
 import { useBackendAuthControllerMe } from '@/api/generated/backend-auth/backend-auth'
 
@@ -13,6 +13,14 @@ export function useOrganizationRoles() {
 	const organization = useActiveOrganization()
 
 	return organization ? parseOrganizationRoles(organization.role) : []
+}
+
+/**
+ * True for a member who is only a teacher: they work with their own lessons
+ * and students and never see school finances.
+ */
+export function useIsTeacherOnly() {
+	return isTeacherOnly(useOrganizationRoles())
 }
 
 const TEACHER_MANAGER_ROLES = ['owner', 'admin']

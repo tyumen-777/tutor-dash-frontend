@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
+import { SessionHydrator } from '@/features/auth/components/session-hydrator'
 import { getSession } from '@/features/auth/session'
 
 export default async function DashboardLayout({
@@ -21,8 +22,10 @@ export default async function DashboardLayout({
 	}
 
 	return (
-		<TooltipProvider>
-			<AppSidebar>{children}</AppSidebar>
-		</TooltipProvider>
+		<SessionHydrator session={session}>
+			<TooltipProvider>
+				<AppSidebar>{children}</AppSidebar>
+			</TooltipProvider>
+		</SessionHydrator>
 	)
 }

@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { GraduationCap, Pencil } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 
@@ -64,8 +64,11 @@ import {
 	hasMessage,
 	parseApiError
 } from '@/api/errors'
-import type { LessonResponse } from '@/api/generated/models'
-import { useSchoolTimezone } from '@/features/auth/api/use-organization-role'
+import type { LessonResponse, TeacherResponse } from '@/api/generated/models'
+import {
+	useIsTeacherOnly,
+	useSchoolTimezone
+} from '@/features/auth/api/use-organization-role'
 import { formatLessons } from '@/features/income/payment-options'
 import { useStudents } from '@/features/students/api/use-students'
 import { getStudentFullName } from '@/features/students/format'
@@ -82,28 +85,40 @@ type StudentOption = {
  * Registers a held lesson: one lesson is deducted from the student and the
  * teacher is credited by their hourly rate. With `lesson` it edits a held
  * lesson instead; the student stays the same and the deduction is untouched.
+ *
+ * With `ownTeacher` the lesson is registered for that teacher only (a teacher
+ * in their cabinet). A teacher-only member edits just topic and homework.
  */
 export function LessonFormDialog({
 	lesson,
+	ownTeacher,
 	open,
 	onOpenChange
 }: {
 	lesson?: LessonResponse
+	ownTeacher?: TeacherResponse
 	open: boolean
 	onOpenChange: (open: boolean) => void
 }) {
 	const isEdit = Boolean(lesson)
-	// У выплаченного занятия меняются только тема и домашнее задание
+	const isTeacherOnly = useIsTeacherOnly()
+	// У выплаченного занятия меняются только тема и домашнее задание;
+	// у преподавателя время и длительность меняет администратор
 	const paidOut = Boolean(lesson?.payoutExpenseId)
+	const topicOnly = paidOut || (isEdit && isTeacherOnly)
 	const timezone = useSchoolTimezone()
 	const schema = useMemo(() => createLessonFormSchema(timezone), [timezone])
-	const defaultValues = useMemo(
+	const getDefaults = useCallback(
 		() =>
 			lesson
 				? getEditDefaultValues(lesson, timezone)
-				: getCreateDefaultValues(timezone),
-		[lesson, timezone]
+				: {
+						...getCreateDefaultValues(timezone),
+						teacherId: ownTeacher?.id ?? ''
+					},
+		[lesson, ownTeacher, timezone]
 	)
+	const defaultValues = useMemo(() => getDefaults(), [getDefaults])
 	const form = useForm<LessonFormValues>({
 		resolver: zodResolver(schema),
 		defaultValues,
@@ -118,12 +133,8 @@ export function LessonFormDialog({
 	useEffect(() => {
 		if (!open) return
 
-		form.reset(
-			lesson
-				? getEditDefaultValues(lesson, timezone)
-				: getCreateDefaultValues(timezone)
-		)
-	}, [open, form, lesson, timezone])
+		form.reset(getDefaults())
+	}, [open, form, getDefaults])
 
 	const students = useStudents()
 	const studentOptions = useMemo<StudentOption[]>(
@@ -141,9 +152,11 @@ export function LessonFormDialog({
 		[students.data]
 	)
 
-	const teachers = useTeachers('active')
+	const teachers = useTeachers('active', !ownTeacher && !isTeacherOnly)
 	const teacherOptions = useMemo(() => {
-		const options = (teachers.data?.items ?? []).map(teacher => ({
+		const options = (
+			ownTeacher ? [ownTeacher] : (teachers.data?.items ?? [])
+		).map(teacher => ({
 			value: teacher.id,
 			label: teacher.fullName,
 			hourlyRate: Number(teacher.hourlyRate)
@@ -165,7 +178,7 @@ export function LessonFormDialog({
 		return options.map(option =>
 			option.value === current.value ? current : option
 		)
-	}, [teachers.data, lesson])
+	}, [teachers.data, lesson, ownTeacher])
 
 	const [studentId, teacherId, durationMin] = useWatch({
 		control: form.control,
@@ -185,13 +198,13 @@ export function LessonFormDialog({
 
 	// Подставляем основного преподавателя ученика, пока его не выбрали вручную
 	useEffect(() => {
-		if (isEdit || !selectedStudent?.teacherId) return
+		if (isEdit || ownTeacher || !selectedStudent?.teacherId) return
 		if (form.getFieldState('teacherId').isDirty) return
 
 		form.setValue('teacherId', selectedStudent.teacherId, {
 			shouldValidate: form.formState.isSubmitted
 		})
-	}, [isEdit, selectedStudent, form])
+	}, [isEdit, ownTeacher, selectedStudent, form])
 
 	function handleOpenChange(nextOpen: boolean) {
 		onOpenChange(nextOpen)
@@ -230,6 +243,12 @@ export function LessonFormDialog({
 			})
 			return
 		}
+		if (apiError.status === 403 && hasMessage(apiError, 'not assigned')) {
+			form.setError('studentId', {
+				message: 'Ученик закреплён за другим преподавателем'
+			})
+			return
+		}
 		if (apiError.status === 400 && hasMessage(apiError, 'Student')) {
 			form.setError('studentId', { message: 'Ученик больше недоступен' })
 			return
@@ -262,7 +281,10 @@ export function LessonFormDialog({
 			updateLesson.mutate(
 				{
 					id: lesson.id,
-					data: toUpdateLessonRequest(values, timezone)
+					// Преподаватель отправляет только то, что ему можно менять
+					data: isTeacherOnly
+						? { topic: values.topic, homework: values.homework }
+						: toUpdateLessonRequest(values, timezone)
 				},
 				{
 					onSuccess: updated => {
@@ -322,9 +344,11 @@ export function LessonFormDialog({
 								<DialogDescription>
 									{paidOut
 										? 'Занятие вошло в выплату преподавателю: можно изменить только тему и домашнее задание. Чтобы изменить остальное, отмените выплату в расходах.'
-										: isEdit
-											? 'Списание у ученика не изменится. Начисление преподавателю пересчитается по длительности и ставке.'
-											: 'У ученика спишется одно занятие, а преподавателю начислится оплата по его ставке.'}
+										: topicOnly
+											? 'Можно изменить тему и домашнее задание. Время, длительность и отмену занятия меняет администратор школы.'
+											: isEdit
+												? 'Списание у ученика не изменится. Начисление преподавателю пересчитается по длительности и ставке.'
+												: 'У ученика спишется одно занятие, а преподавателю начислится оплата по его ставке.'}
 								</DialogDescription>
 							</div>
 						</div>
@@ -351,8 +375,9 @@ export function LessonFormDialog({
 										className='h-10'
 									/>
 									<FieldDescription>
-										Ученика сменить нельзя — отмените
-										занятие и внесите заново
+										{isTeacherOnly
+											? 'Ученика может сменить администратор школы'
+											: 'Ученика сменить нельзя — отмените занятие и внесите заново'}
 									</FieldDescription>
 								</Field>
 							) : (
@@ -452,7 +477,9 @@ export function LessonFormDialog({
 										</FieldLabel>
 										<Select
 											items={teacherOptions}
-											disabled={paidOut}
+											disabled={
+												topicOnly || Boolean(ownTeacher)
+											}
 											value={field.value || null}
 											onValueChange={value =>
 												field.onChange(value ?? '')
@@ -528,7 +555,7 @@ export function LessonFormDialog({
 												max={schoolNow(timezone).format(
 													'YYYY-MM-DD'
 												)}
-												disabled={paidOut}
+												disabled={topicOnly}
 												aria-invalid={
 													fieldState.invalid
 												}
@@ -556,7 +583,7 @@ export function LessonFormDialog({
 												id={field.name}
 												type='time'
 												step={300}
-												disabled={paidOut}
+												disabled={topicOnly}
 												aria-invalid={
 													fieldState.invalid
 												}
@@ -581,7 +608,7 @@ export function LessonFormDialog({
 											</FieldLabel>
 											<Select
 												items={lessonDurationOptions}
-												disabled={paidOut}
+												disabled={topicOnly}
 												value={
 													field.value
 														? String(field.value)

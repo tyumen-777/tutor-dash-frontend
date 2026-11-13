@@ -34,10 +34,12 @@ import type { LessonResponse } from '@/api/generated/models'
 import {
 	useCanDeleteLessons,
 	useCanManageLessons,
+	useIsTeacherOnly,
 	useSchoolTimezone
 } from '@/features/auth/api/use-organization-role'
 import { formatPeriod } from '@/features/expenses/expense-filters'
 import { PeriodFilter } from '@/features/expenses/expenses-filters'
+import { useMyTeacher } from '@/features/me/api/use-me'
 import { useTeachers } from '@/features/teachers/api/use-teachers'
 
 const ALL = 'all'
@@ -101,9 +103,13 @@ export default function LessonsPage() {
 	)
 	const canManage = useCanManageLessons()
 	const canDelete = useCanDeleteLessons()
+	// Преподаватель видит и вносит только свои занятия
+	const isTeacherOnly = useIsTeacherOnly()
+	const myTeacher = useMyTeacher(isTeacherOnly).data
+	const canAdd = canManage || Boolean(myTeacher)
 	const timezone = useSchoolTimezone()
 	const { data, isPending, isError } = useLessons(toListLessonsQuery(filters))
-	const teachers = useTeachers('all')
+	const teachers = useTeachers('all', !isTeacherOnly)
 	const teacherOptions = useMemo(
 		() =>
 			(teachers.data?.items ?? []).map(teacher => ({
@@ -118,13 +124,15 @@ export default function LessonsPage() {
 		() =>
 			getColumns({
 				canManage,
+				canEdit: canManage || isTeacherOnly,
 				canDelete,
+				showTeacher: !isTeacherOnly,
 				timezone,
 				onEdit: lesson => setDialog({ type: 'edit', lesson }),
 				onCancel: lesson => setDialog({ type: 'cancel', lesson }),
 				onDelete: lesson => setDialog({ type: 'delete', lesson })
 			}),
-		[canManage, canDelete, timezone]
+		[canManage, canDelete, isTeacherOnly, timezone]
 	)
 
 	function updateFilters(next: LessonFilters) {
@@ -161,7 +169,9 @@ export default function LessonsPage() {
 					<p className='text-muted-foreground text-sm'>
 						{filters.deleted
 							? 'Занятия, внесённые по ошибке. Они не учитываются в списаниях, начислениях и итогах.'
-							: 'Проведённые занятия: списания у учеников и начисления преподавателям.'}
+							: isTeacherOnly
+								? 'Ваши проведённые занятия и начисления за них.'
+								: 'Проведённые занятия: списания у учеников и начисления преподавателям.'}
 					</p>
 				</div>
 				{filters.deleted ? (
@@ -175,7 +185,7 @@ export default function LessonsPage() {
 						<ArrowLeft data-icon='inline-start' />
 						Все занятия
 					</Button>
-				) : canManage ? (
+				) : canAdd ? (
 					<Button
 						size='lg'
 						onClick={() => setDialog({ type: 'create' })}
@@ -194,16 +204,18 @@ export default function LessonsPage() {
 						updateFilters({ ...filters, ...period })
 					}
 				/>
-				<OptionFilter
-					label='Преподаватель'
-					allLabel='Все преподаватели'
-					options={teacherOptions}
-					value={filters.teacherId}
-					onChange={teacherId =>
-						updateFilters({ ...filters, teacherId })
-					}
-					className='w-56'
-				/>
+				{isTeacherOnly ? null : (
+					<OptionFilter
+						label='Преподаватель'
+						allLabel='Все преподаватели'
+						options={teacherOptions}
+						value={filters.teacherId}
+						onChange={teacherId =>
+							updateFilters({ ...filters, teacherId })
+						}
+						className='w-56'
+					/>
+				)}
 				{filters.deleted ? null : (
 					<OptionFilter
 						label='Статус'
@@ -258,7 +270,11 @@ export default function LessonsPage() {
 						value={summary ? String(summary.lessonsCount) : '—'}
 					/>
 					<Stat
-						label='Начислено преподавателям'
+						label={
+							isTeacherOnly
+								? 'Мой заработок'
+								: 'Начислено преподавателям'
+						}
 						value={
 							summary
 								? formatMoney(summary.teacherPayTotal, currency)
@@ -290,8 +306,9 @@ export default function LessonsPage() {
 				) : null}
 			</div>
 
-			{canManage ? (
+			{canAdd ? (
 				<LessonFormDialog
+					ownTeacher={isTeacherOnly ? myTeacher : undefined}
 					open={dialog?.type === 'create'}
 					onOpenChange={closeDialog}
 				/>

@@ -21,3 +21,25 @@ export function getOrganizationRoleLabel(role: string) {
 		.map(item => ORGANIZATION_ROLE_LABELS[item] ?? item)
 		.join(', ')
 }
+
+const SCHOOL_WIDE_ROLES = ['owner', 'admin', 'manager', 'accountant']
+
+/**
+ * A member who is only a teacher sees their own cabinet, lessons and students.
+ * The backend applies the same rule (see `resolveTeacherScope`).
+ */
+export function isTeacherOnly(roles: string[]) {
+	return (
+		roles.includes('teacher') &&
+		!roles.some(role => SCHOOL_WIDE_ROLES.includes(role))
+	)
+}
+
+/** Sections a teacher-only member may open; everything else is «no access». */
+export const TEACHER_PATHS = ['/me', '/lessons', '/students', '/student']
+
+export function isTeacherPath(pathname: string) {
+	return TEACHER_PATHS.some(
+		path => pathname === path || pathname.startsWith(`${path}/`)
+	)
+}

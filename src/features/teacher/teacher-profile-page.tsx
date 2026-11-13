@@ -45,6 +45,7 @@ import {
 	useTeacherStudents
 } from './api/use-teacher-activity'
 import { LessonsCalendar } from './lessons-calendar'
+import { TeacherAccessCard } from './teacher-access-card'
 import type {
 	LessonListResponse,
 	StudentResponse,
@@ -52,6 +53,7 @@ import type {
 } from '@/api/generated/models'
 import {
 	useCanManageExpenses,
+	useCanManageTeachers,
 	useSchoolTimezone
 } from '@/features/auth/api/use-organization-role'
 import { usePayoutReport } from '@/features/payouts/api/use-payouts'
@@ -59,7 +61,7 @@ import { getStudentFullName } from '@/features/students/format'
 import { formatDate, formatHourlyRate } from '@/features/teachers/format'
 import { TeacherActions } from '@/features/teachers/teacher-actions'
 
-function getMonthPeriod(month: Date): MonthPeriod {
+export function getMonthPeriod(month: Date): MonthPeriod {
 	const start = dayjs(month).startOf('month')
 
 	return {
@@ -252,7 +254,7 @@ function ProfileHeader({
 	)
 }
 
-function Schedule({
+export function Schedule({
 	lessons,
 	timezone,
 	month,
@@ -282,7 +284,7 @@ function Schedule({
 	)
 }
 
-function Students({ students }: { students: StudentResponse[] }) {
+export function Students({ students }: { students: StudentResponse[] }) {
 	return (
 		<SectionCard
 			title='Ученики'
@@ -362,7 +364,7 @@ function Students({ students }: { students: StudentResponse[] }) {
 	)
 }
 
-function Contacts({ teacher }: { teacher: TeacherResponse }) {
+export function Contacts({ teacher }: { teacher: TeacherResponse }) {
 	return (
 		<SectionCard
 			title='Контакты'
@@ -445,6 +447,7 @@ function TeacherProfileContent({ teacherId }: TeacherProfilePageProps) {
 	const period = useMemo(() => getMonthPeriod(month), [month])
 	const lessons = useTeacherLessons(teacherId, period)
 	const students = useTeacherStudents(teacherId)
+	const canManageAccess = useCanManageTeachers()
 
 	if (isPending) {
 		return <ProfileSkeleton />
@@ -489,6 +492,9 @@ function TeacherProfileContent({ teacherId }: TeacherProfilePageProps) {
 				</div>
 				<div className='grid min-w-0 content-start gap-4'>
 					<Contacts teacher={teacher} />
+					{canManageAccess ? (
+						<TeacherAccessCard teacher={teacher} />
+					) : null}
 				</div>
 			</div>
 		</>
