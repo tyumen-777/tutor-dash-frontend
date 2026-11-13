@@ -6,16 +6,25 @@ CRM-система для школ иностранных языков и обр
 
 Языковая школа обычно ведет сразу несколько процессов: заявки, пробные уроки, группы по уровням, индивидуальные занятия, абонементы, долги, посещаемость, домашние задания, прогресс учеников и зарплаты преподавателей. Tutor Dash собирает эти процессы в единую CRM, чтобы школа меньше жила в таблицах и переписках, а больше управляла понятными показателями.
 
-## Что уже заложено в интерфейсе
+## Что уже работает
 
-- Главный дашборд с выручкой месяца, количеством активных учеников, долгами и риском ухода.
-- Блок приоритетных действий: пробные уроки без follow-up, ученики без следующего занятия, группы с просадкой посещаемости.
-- Воронка продаж от новых лидов до оплаты.
-- Расписание дня со статусами занятий и заполненностью групп.
-- Карточки нагрузки преподавателей и удержания учеников.
-- Список учеников с сортировкой, действиями и переходом в профиль.
-- Профиль ученика: контакты, родитель, уровень, цель обучения, преподаватель, ближайшее занятие, остаток занятий, посещаемость, история уроков, оплаты и предпочтительное время.
-- Базовая навигация по разделам: обзор, ученики, занятия, финансы, расписание, материалы и настройки.
+Все разделы работают с реальным API бэкенда (`../backend`).
+
+| Раздел | Маршрут | Что внутри |
+|---|---|---|
+| Вход | `/login` | Вход по email и паролю, выбор школы `/select-organization` |
+| Обзор | `/` | Выручка месяца, активные ученики, ученики с низким балансом, план-факт и другие метрики |
+| Ученики | `/students`, `/student/[id]` | Список с поиском и сортировкой, профиль: контакты, уровень, преподаватель, баланс, история уроков и оплат |
+| Преподаватели | `/teachers`, `/teacher/[id]` | Список, архив и восстановление, приглашение в личный кабинет |
+| Занятия | `/lessons` | Журнал занятий, списание с баланса ученика |
+| Финансы | `/income`, `/expenses`, `/payouts` | Поступления, расходы, выплаты преподавателям |
+| Настройки | `/settings/school`, `/settings/company` | Название и часовой пояс школы, уровни обучения |
+| Кабинет преподавателя | `/me` | Свои ученики, занятия и заработок |
+| Приглашение | `/invite/[id]` | Принятие приглашения в школу |
+
+Меню и доступные страницы зависят от роли. Преподаватель видит только свой
+кабинет, своих учеников и занятия и в занятиях меняет лишь тему и домашнее
+задание; остальные страницы закрыты `TeacherRouteGuard`.
 
 ## Полезный функционал для развития CRM
 
@@ -80,42 +89,96 @@ CRM-система для школ иностранных языков и обр
 
 ## Технологии
 
-- [Next.js](https://nextjs.org/) 16
-- [React](https://react.dev/) 19
-- [TypeScript](https://www.typescriptlang.org/)
-- [Tailwind CSS](https://tailwindcss.com/) 4
-- [shadcn/ui](https://ui.shadcn.com/) и локальные UI-компоненты
-- [TanStack Table](https://tanstack.com/table) для таблиц
-- [Lucide React](https://lucide.dev/) для иконок
-- [dayjs](https://day.js.org/) для работы с датами
+- [Next.js](https://nextjs.org/) 16 (App Router, `output: 'standalone'`)
+- [React](https://react.dev/) 19, [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/) 4, [shadcn/ui](https://ui.shadcn.com/) на Base UI, [Lucide](https://lucide.dev/)
+- [TanStack Query](https://tanstack.com/query) + [Axios](https://axios-http.com/) — запросы к API
+- [Orval](https://orval.dev/) — генерация клиента и хуков из OpenAPI бэкенда
+- [TanStack Table](https://tanstack.com/table) — таблицы
+- [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) — формы и валидация
+- [dayjs](https://day.js.org/), [date-fns](https://date-fns.org/), [react-day-picker](https://daypicker.dev/) — даты
+- [Sonner](https://sonner.emilkowal.ski/) — уведомления
+
+## Быстрый старт
+
+Нужен Node.js 22 и запущенный бэкенд на `http://localhost:4000`
+(инструкция — в [`../backend/README.md`](../backend/README.md)).
+
+```bash
+npm install
+cp .env.example .env
+npm run dev
+```
+
+Приложение откроется на `http://localhost:3000`.
+
+### Переменные окружения
+
+| Переменная | Описание |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | Базовый URL API без пути, например `http://localhost:4000`. Вшивается в бандл при сборке |
+
+### Скрипты
+
+| Команда | Что делает |
+|---|---|
+| `npm run dev` | Dev-сервер |
+| `npm run build` / `npm run start` | Продакшен-сборка и запуск |
+| `npm run lint` | ESLint |
+| `npm run format` | Prettier (с сортировкой импортов и классов Tailwind) |
+| `npm run api:generate` | Перегенерировать API-клиент из OpenAPI бэкенда |
+| `npm run api:watch` | То же в режиме наблюдения |
+
+## Структура
+
+```
+src/
+  app/                  маршруты App Router
+    (auth)/login        вход
+    (organization)/     выбор школы
+    (dashboard)/        все страницы CRM за авторизацией
+    (invite)/invite     принятие приглашения
+    providers/          React Query provider
+  features/             логика и UI по доменам: students, teachers, lessons,
+                        payments, expenses, payouts, settings, me, auth...
+  components/
+    ui/                 компоненты shadcn/ui
+    layout/             сайдбар, TeacherRouteGuard
+    data-table.tsx      общая таблица на TanStack Table
+  api/
+    api-client.ts       Axios-инстанс (baseURL, cookie, обработка ошибок)
+    generated/          код от Orval — не редактировать вручную
+  lib/                  форматирование денег, время школы, утилиты
+  proxy.ts              редирект на /login, если нет cookie сессии
+```
+
+Проверка авторизации двухступенчатая: `src/proxy.ts` быстро отправляет на
+`/login` запросы без cookie сессии, а сама сессия проверяется на сервере в
+layout раздела `(dashboard)`.
 
 ## Генерация API-клиента
 
-Orval генерирует типизированные Axios-функции и хуки TanStack Query из
-OpenAPI-документа. По умолчанию схема загружается с
-`http://localhost:4000/api`, а запросы приложения отправляются на
-`NEXT_PUBLIC_API_URL`.
+Orval читает OpenAPI-схему бэкенда (`http://localhost:4000/openapi.json`) и
+генерирует типизированные Axios-функции и хуки TanStack Query в
+`src/api/generated` — по папке на каждый тег OpenAPI, модели в
+`src/api/generated/models`. Все запросы идут через `apiRequest` из
+`src/api/api-client.ts`.
+
+После изменения API на бэкенде запустите его и перегенерируйте клиент:
 
 ```bash
-cp .env.example .env
 npm run api:generate
 ```
 
-URL схемы переопределяется переменной `OPENAPI_URL`. Если она указывает на
-локальный файл, для автоматической перегенерации при его изменении можно
-использовать `npm run api:watch`.
-
-Сгенерированные файлы появятся в `src/lib/api/generated` и уже будут содержать
-React Query hooks. Имя хука строится из `operationId` в OpenAPI. Например, если
-операция имеет `operationId: getStudents`, клиентский компонент сможет вызвать:
+Имя хука строится из `operationId`. Пример использования:
 
 ```tsx
 'use client'
 
-import { useGetStudents } from '@/lib/api/generated/students/students'
+import { useStudentsControllerListStudents } from '@/api/generated/students/students'
 
 export function Students() {
-	const { data, isPending, error } = useGetStudents()
+	const { data, isPending, error } = useStudentsControllerListStudents()
 
 	if (isPending) return <p>Загрузка...</p>
 	if (error) return <p>Не удалось загрузить учеников</p>
@@ -124,7 +187,16 @@ export function Students() {
 }
 ```
 
-Точный путь импорта зависит от тегов OpenAPI, а имя хука — от `operationId`.
-Сгенерированный код изменять вручную не нужно: общие настройки Axios находятся
-в `src/lib/api-client.ts`, а кэш React Query настраивается в
+Сгенерированный код вручную не меняется: общие настройки Axios — в
+`src/api/api-client.ts`, кэш React Query — в
 `src/app/providers/query-provider.tsx`.
+
+## Деплой
+
+При пуше в `main` GitHub Actions (`.github/workflows/deploy.yml`) собирает
+Docker-образ (Next.js standalone), публикует его в GHCR
+(`ghcr.io/<owner>/tutor-frontend`) и запускает деплой в Dokploy.
+
+Нужны переменная репозитория `NEXT_PUBLIC_API_URL` (для продакшена —
+`https://api.edudash.org`; без неё сборка остановится) и секреты
+`DOKPLOY_URL`, `DOKPLOY_API_KEY`, `DOKPLOY_FRONTEND_APP_ID`.
