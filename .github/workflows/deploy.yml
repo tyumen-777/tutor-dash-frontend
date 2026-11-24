@@ -34,8 +34,12 @@ jobs:
 
       - run: npm ci
 
+      # PageProps/LayoutProps и типы маршрутов генерирует Next в .next/types,
+      # а .next и next-env.d.ts не коммитятся — без typegen tsc их не найдёт
       - name: Typecheck
-        run: npx tsc --noEmit
+        run: |
+          npx next typegen
+          npx tsc --noEmit
 
       - name: Lint
         run: npm run lint
