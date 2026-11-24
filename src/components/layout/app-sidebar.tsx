@@ -3,11 +3,9 @@
 import {
 	BookOpenCheck,
 	BriefcaseBusiness,
-	CalendarDays,
 	ChevronRight,
 	GraduationCap,
 	Home,
-	LibraryBig,
 	type LucideIcon,
 	PanelLeftClose,
 	PanelLeftOpen,
@@ -81,8 +79,6 @@ const navigation: (NavigationLink | NavigationGroup)[] = [
 			{ title: 'История операций', href: '/history' }
 		]
 	},
-	{ title: 'Расписание', href: '/calendar', icon: CalendarDays },
-	{ title: 'Материалы', href: '/materials', icon: LibraryBig },
 	{
 		title: 'Настройки',
 		icon: Settings,
