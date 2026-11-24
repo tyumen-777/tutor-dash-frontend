@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 import type { DashboardSummaryResponseExpenses } from './dashboardSummaryResponseExpenses'
+import type { DashboardSummaryResponseFinance } from './dashboardSummaryResponseFinance'
 import type { DashboardSummaryResponseIncome } from './dashboardSummaryResponseIncome'
 import type { DashboardSummaryResponseLessons } from './dashboardSummaryResponseLessons'
 import type { DashboardSummaryResponseLowBalanceStudentsItem } from './dashboardSummaryResponseLowBalanceStudentsItem'
@@ -35,10 +36,10 @@ export interface DashboardSummaryResponse {
 	 */
 	expenses: DashboardSummaryResponseExpenses
 	/**
-	 * Income minus paid expenses this month. Null without access to expenses.
+	 * Profit by held lessons and school liabilities. Null for roles without access to expenses.
 	 * @nullable
 	 */
-	profit: string | null
+	finance: DashboardSummaryResponseFinance
 	students: DashboardSummaryResponseStudents
 	lessons: DashboardSummaryResponseLessons
 	/** All lessons of today, earliest first. */
