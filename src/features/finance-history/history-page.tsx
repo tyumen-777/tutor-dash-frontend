@@ -19,20 +19,30 @@ import { useFinanceLogs } from './api/use-finance-logs'
 import { getColumns } from './columns'
 import {
 	type HistoryAction,
+	type HistoryEntity,
 	type HistoryFilters,
 	actionOptions,
+	entityOptions,
 	parseHistoryFilters,
 	serializeHistoryFilters,
 	toListFinanceLogsQuery
 } from './history-filters'
-import { useSchoolTimezone } from '@/features/auth/api/use-organization-role'
+import {
+	useCanManageExpenses,
+	useSchoolTimezone
+} from '@/features/auth/api/use-organization-role'
 import { PeriodFilter } from '@/features/expenses/expenses-filters'
 
-const ALL_ACTIONS = 'all'
+const ALL = 'all'
 
 const actionFilterOptions = [
-	{ label: 'Все действия', value: ALL_ACTIONS },
+	{ label: 'Все действия', value: ALL },
 	...actionOptions
+]
+
+const entityFilterOptions = [
+	{ label: 'Все операции', value: ALL },
+	...entityOptions
 ]
 
 export default function FinanceHistoryPage() {
@@ -45,6 +55,8 @@ export default function FinanceHistoryPage() {
 		[query]
 	)
 	const timezone = useSchoolTimezone()
+	// Выплаты преподавателям видны тем же ролям, что и расходы
+	const canSeePayouts = useCanManageExpenses()
 	const { data, isPending, isError } = useFinanceLogs(
 		toListFinanceLogsQuery(filters)
 	)
@@ -69,7 +81,9 @@ export default function FinanceHistoryPage() {
 			<div className='space-y-1'>
 				<h1 className='text-2xl font-semibold'>История операций</h1>
 				<p className='text-muted-foreground text-sm'>
-					Кто и когда вносил, изменял и отменял оплаты учеников.
+					{canSeePayouts
+						? 'Кто и когда вносил, изменял и отменял оплаты учеников, проводил и отменял выплаты преподавателям, закрывал и открывал месяцы.'
+						: 'Кто и когда вносил, изменял и отменял оплаты учеников.'}{' '}
 					Записи нельзя изменить или удалить.
 				</p>
 			</div>
@@ -84,12 +98,12 @@ export default function FinanceHistoryPage() {
 				/>
 				<Select
 					items={actionFilterOptions}
-					value={filters.action ?? ALL_ACTIONS}
+					value={filters.action ?? ALL}
 					onValueChange={value =>
 						updateFilters({
 							...filters,
 							action:
-								value === ALL_ACTIONS || value === null
+								value === ALL || value === null
 									? null
 									: (value as HistoryAction)
 						})
@@ -111,6 +125,40 @@ export default function FinanceHistoryPage() {
 						</SelectGroup>
 					</SelectContent>
 				</Select>
+				{canSeePayouts ? (
+					<Select
+						items={entityFilterOptions}
+						value={filters.entity ?? ALL}
+						onValueChange={value =>
+							updateFilters({
+								...filters,
+								entity:
+									value === ALL || value === null
+										? null
+										: (value as HistoryEntity)
+							})
+						}
+					>
+						<SelectTrigger
+							aria-label='Тип операции'
+							className='w-64'
+						>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent alignItemWithTrigger={false}>
+							<SelectGroup>
+								{entityFilterOptions.map(option => (
+									<SelectItem
+										key={option.value}
+										value={option.value}
+									>
+										{option.label}
+									</SelectItem>
+								))}
+							</SelectGroup>
+						</SelectContent>
+					</Select>
+				) : null}
 				{canReset ? (
 					<Button
 						variant='ghost'

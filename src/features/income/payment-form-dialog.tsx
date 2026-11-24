@@ -60,9 +60,11 @@ import {
 	paymentMethodOptions
 } from './payment-options'
 import {
+	CLOSED_PERIOD_MESSAGE,
 	UNKNOWN_ERROR_MESSAGE,
 	getCommonErrorMessage,
 	hasMessage,
+	isClosedPeriodError,
 	parseApiError
 } from '@/api/errors'
 import type { PaymentResponse } from '@/api/generated/models'
@@ -222,10 +224,8 @@ export function PaymentFormDialog({
 			})
 			return
 		}
-		if (apiError.status === 409 && hasMessage(apiError, 'closed month')) {
-			form.setError('paidOn', {
-				message: 'Нельзя переносить оплату в прошлый месяц или из него'
-			})
+		if (isClosedPeriodError(apiError)) {
+			setFormError(CLOSED_PERIOD_MESSAGE)
 			return
 		}
 		if (apiError.status === 404 || apiError.status === 409) {

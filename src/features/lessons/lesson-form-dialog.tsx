@@ -51,17 +51,21 @@ import {
 import { useCreateLesson, useUpdateLesson } from './api/use-lesson-mutations'
 import {
 	type LessonFormValues,
+	TOO_OLD_LESSON_MESSAGE,
 	createLessonFormSchema,
 	getCreateDefaultValues,
 	getEditDefaultValues,
+	getTeacherMinLessonDate,
 	toCreateLessonRequest,
 	toUpdateLessonRequest
 } from './lesson-form-schema'
 import { calculateTeacherPay, lessonDurationOptions } from './lesson-options'
 import {
+	CLOSED_PERIOD_MESSAGE,
 	UNKNOWN_ERROR_MESSAGE,
 	getCommonErrorMessage,
 	hasMessage,
+	isClosedPeriodError,
 	parseApiError
 } from '@/api/errors'
 import type { LessonResponse, TeacherResponse } from '@/api/generated/models'
@@ -107,7 +111,13 @@ export function LessonFormDialog({
 	const paidOut = Boolean(lesson?.payoutExpenseId)
 	const topicOnly = paidOut || (isEdit && isTeacherOnly)
 	const timezone = useSchoolTimezone()
-	const schema = useMemo(() => createLessonFormSchema(timezone), [timezone])
+	// Преподаватель вносит новое занятие не старше TEACHER_BACKDATE_DAYS дней
+	const minDate =
+		!isEdit && isTeacherOnly ? getTeacherMinLessonDate(timezone) : undefined
+	const schema = useMemo(
+		() => createLessonFormSchema(timezone, minDate),
+		[timezone, minDate]
+	)
 	const getDefaults = useCallback(
 		() =>
 			lesson
@@ -218,6 +228,10 @@ export function LessonFormDialog({
 	function handleError(error: unknown) {
 		const apiError = parseApiError(error)
 
+		if (isClosedPeriodError(apiError)) {
+			setFormError(CLOSED_PERIOD_MESSAGE)
+			return
+		}
 		if (
 			apiError.status === 409 &&
 			hasMessage(apiError, 'Only held lessons')
@@ -257,6 +271,10 @@ export function LessonFormDialog({
 			form.setError('teacherId', {
 				message: 'Преподаватель больше недоступен'
 			})
+			return
+		}
+		if (apiError.status === 400 && hasMessage(apiError, 'too far')) {
+			form.setError('date', { message: TOO_OLD_LESSON_MESSAGE })
 			return
 		}
 		if (apiError.status === 400 && hasMessage(apiError, 'startsAt')) {
@@ -555,6 +573,7 @@ export function LessonFormDialog({
 												max={schoolNow(timezone).format(
 													'YYYY-MM-DD'
 												)}
+												min={minDate}
 												disabled={topicOnly}
 												aria-invalid={
 													fieldState.invalid

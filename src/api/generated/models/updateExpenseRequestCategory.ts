@@ -7,7 +7,7 @@
  */
 
 /**
- * Expense category: rent, teacher salary, materials, marketing, utilities, software, household, taxes or other.
+ * Expense category: rent, staff salary (teacher payouts are created via POST /payouts), materials, marketing, utilities, software, household, taxes or other.
  */
 export type UpdateExpenseRequestCategory =
 	(typeof UpdateExpenseRequestCategory)[keyof typeof UpdateExpenseRequestCategory]

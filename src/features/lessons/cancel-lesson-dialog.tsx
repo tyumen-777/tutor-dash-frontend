@@ -20,8 +20,10 @@ import { toSchoolTime } from '@/lib/school-time'
 
 import { useCancelLesson } from './api/use-lesson-mutations'
 import {
+	CLOSED_PERIOD_MESSAGE,
 	UNKNOWN_ERROR_MESSAGE,
 	getCommonErrorMessage,
+	isClosedPeriodError,
 	parseApiError
 } from '@/api/errors'
 import type { LessonResponse } from '@/api/generated/models'
@@ -67,9 +69,11 @@ export function CancelLessonDialog({
 
 	const errorMessage = !apiError
 		? null
-		: apiError.status === 409
-			? 'Занятие уже отменено.'
-			: (getCommonErrorMessage(apiError) ?? UNKNOWN_ERROR_MESSAGE)
+		: isClosedPeriodError(apiError)
+			? CLOSED_PERIOD_MESSAGE
+			: apiError.status === 409
+				? 'Занятие уже отменено.'
+				: (getCommonErrorMessage(apiError) ?? UNKNOWN_ERROR_MESSAGE)
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>

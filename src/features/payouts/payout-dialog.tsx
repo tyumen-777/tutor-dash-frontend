@@ -30,9 +30,11 @@ import { formatMoney } from '@/lib/format-money'
 
 import { useCreatePayout } from './api/use-payouts'
 import {
+	CLOSED_PERIOD_MESSAGE,
 	UNKNOWN_ERROR_MESSAGE,
 	getCommonErrorMessage,
 	hasMessage,
+	isClosedPeriodError,
 	parseApiError
 } from '@/api/errors'
 import type {
@@ -81,6 +83,10 @@ export function PayoutDialog({
 
 		if (apiError.status === 400 && hasMessage(apiError, 'paidOn')) {
 			setDateError('Дата не может быть в будущем')
+			return
+		}
+		if (isClosedPeriodError(apiError)) {
+			setFormError(CLOSED_PERIOD_MESSAGE)
 			return
 		}
 		if (apiError.status === 409) {

@@ -17,8 +17,10 @@ import { formatMoney } from '@/lib/format-money'
 
 import { useCancelExpense } from './api/use-expense-mutations'
 import {
+	CLOSED_PERIOD_MESSAGE,
 	UNKNOWN_ERROR_MESSAGE,
 	getCommonErrorMessage,
+	isClosedPeriodError,
 	parseApiError
 } from '@/api/errors'
 import type { ExpenseResponse } from '@/api/generated/models'
@@ -60,9 +62,11 @@ export function CancelExpenseDialog({
 
 	const errorMessage = !apiError
 		? null
-		: apiError.status === 409
-			? 'Расход уже отменён.'
-			: (getCommonErrorMessage(apiError) ?? UNKNOWN_ERROR_MESSAGE)
+		: isClosedPeriodError(apiError)
+			? CLOSED_PERIOD_MESSAGE
+			: apiError.status === 409
+				? 'Расход уже отменён.'
+				: (getCommonErrorMessage(apiError) ?? UNKNOWN_ERROR_MESSAGE)
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>

@@ -28,15 +28,33 @@ const lessonFieldsSchema = z.object({
 
 export type LessonFormValues = z.infer<typeof lessonFieldsSchema>
 
-// Дата и время вводятся по часам школы, а не браузера
-export function createLessonFormSchema(timezone: string) {
-	return lessonFieldsSchema.refine(
-		values =>
-			!fromSchoolTime(values.date, values.time, timezone).isAfter(
-				dayjs()
-			),
-		{ message: 'Занятие не может быть в будущем', path: ['time'] }
-	)
+// Сколько дней назад преподаватель может сам внести занятие (как на бэкенде)
+export const TEACHER_BACKDATE_DAYS = 7
+
+export const TOO_OLD_LESSON_MESSAGE = `Можно внести занятие не старше ${TEACHER_BACKDATE_DAYS} дней — более раннее внесёт менеджер`
+
+/** Самая ранняя дата (YYYY-MM-DD), за которую преподаватель вносит занятие. */
+export function getTeacherMinLessonDate(timezone: string): string {
+	return schoolNow(timezone)
+		.subtract(TEACHER_BACKDATE_DAYS, 'day')
+		.format('YYYY-MM-DD')
+}
+
+// Дата и время вводятся по часам школы, а не браузера.
+// minDate — ограничение для преподавателя, который вносит своё занятие
+export function createLessonFormSchema(timezone: string, minDate?: string) {
+	return lessonFieldsSchema
+		.refine(
+			values =>
+				!fromSchoolTime(values.date, values.time, timezone).isAfter(
+					dayjs()
+				),
+			{ message: 'Занятие не может быть в будущем', path: ['time'] }
+		)
+		.refine(values => !minDate || values.date >= minDate, {
+			message: TOO_OLD_LESSON_MESSAGE,
+			path: ['date']
+		})
 }
 
 export function getCreateDefaultValues(

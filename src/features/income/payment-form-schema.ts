@@ -19,7 +19,7 @@ export const paymentFormSchema = z.object({
 	studentId: z.string().min(1, 'Выберите ученика'),
 	amount: z
 		.number({ error: 'Введите сумму' })
-		.min(0, 'Сумма не может быть отрицательной')
+		.positive('Сумма должна быть больше нуля')
 		.max(10_000_000, 'Слишком большая сумма')
 		.refine(
 			value => Math.abs(value * 100 - Math.round(value * 100)) < 1e-6,

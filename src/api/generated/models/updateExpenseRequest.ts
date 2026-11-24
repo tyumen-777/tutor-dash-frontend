@@ -24,7 +24,7 @@ export interface UpdateExpenseRequest {
 	 * @exclusiveMinimum 0
 	 */
 	amount?: number
-	/** Expense category: rent, teacher salary, materials, marketing, utilities, software, household, taxes or other. */
+	/** Expense category: rent, staff salary (teacher payouts are created via POST /payouts), materials, marketing, utilities, software, household, taxes or other. */
 	category?: UpdateExpenseRequestCategory
 	/** Who received the money; an empty string clears it. */
 	recipient?: string | ''
@@ -44,9 +44,8 @@ export interface UpdateExpenseRequest {
 	 */
 	comment?: string
 	/**
-	 * Teacher who received the salary (SALARY category only).
+	 * Only null is accepted: unlinks the teacher from a manual expense. Teacher salaries are created via POST /payouts.
 	 * @nullable
-	 * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
 	 */
-	teacherId?: string | null
+	teacherId?: null
 }

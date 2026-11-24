@@ -7,11 +7,13 @@
  */
 
 /**
- * What the operation was made on.
+ * What the operation was made on: a student payment, a teacher payout or closing / reopening a month.
  */
 export type FinanceLogResponseEntityType =
 	(typeof FinanceLogResponseEntityType)[keyof typeof FinanceLogResponseEntityType]
 
 export const FinanceLogResponseEntityType = {
-	PAYMENT: 'PAYMENT'
+	PAYMENT: 'PAYMENT',
+	PAYOUT: 'PAYOUT',
+	PERIOD: 'PERIOD'
 } as const

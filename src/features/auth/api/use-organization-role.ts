@@ -105,6 +105,24 @@ export function useCanDeleteLessons() {
 	)
 }
 
+const PERIOD_CLOSER_ROLES = ['owner', 'admin']
+
+/**
+ * Closing an ended month is available to owners and admins.
+ */
+export function useCanClosePeriods() {
+	return useOrganizationRoles().some(role =>
+		PERIOD_CLOSER_ROLES.includes(role)
+	)
+}
+
+/**
+ * Reopening a closed month is limited to the owner.
+ */
+export function useIsOwner() {
+	return useOrganizationRoles().includes('owner')
+}
+
 /**
  * The active organization of the session (school), if one is selected.
  */

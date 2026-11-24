@@ -6,7 +6,7 @@ import type {
 export const EXPENSE_CATEGORY_LABELS: Record<ExpenseResponseCategory, string> =
 	{
 		RENT: 'Аренда',
-		SALARY: 'Зарплата преподавателей',
+		SALARY: 'Зарплата сотрудников',
 		MATERIALS: 'Учебные материалы',
 		MARKETING: 'Маркетинг и реклама',
 		UTILITIES: 'Коммунальные услуги',

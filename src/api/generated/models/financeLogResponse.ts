@@ -9,6 +9,7 @@ import type { FinanceLogResponseAction } from './financeLogResponseAction'
 import type { FinanceLogResponseActor } from './financeLogResponseActor'
 import type { FinanceLogResponseEntityType } from './financeLogResponseEntityType'
 import type { FinanceLogResponseStudent } from './financeLogResponseStudent'
+import type { FinanceLogResponseTeacher } from './financeLogResponseTeacher'
 
 /**
  * One entry of the finance operations history.
@@ -26,10 +27,10 @@ export interface FinanceLogResponse {
 	createdAt: string
 	/** Operation: created, edited or canceled. */
 	action: FinanceLogResponseAction
-	/** What the operation was made on. */
+	/** What the operation was made on: a student payment, a teacher payout or closing / reopening a month. */
 	entityType: FinanceLogResponseEntityType
 	/**
-	 * ID of the payment.
+	 * ID of the payment, or of the SALARY expense for a payout.
 	 * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
 	 */
 	entityId: string
@@ -42,4 +43,9 @@ export interface FinanceLogResponse {
 	 * @nullable
 	 */
 	student: FinanceLogResponseStudent
+	/**
+	 * Related teacher, if any (payouts).
+	 * @nullable
+	 */
+	teacher: FinanceLogResponseTeacher
 }

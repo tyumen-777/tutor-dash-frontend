@@ -88,7 +88,8 @@ const navigation: (NavigationLink | NavigationGroup)[] = [
 		icon: Settings,
 		children: [
 			{ title: 'Школа', href: '/settings/school' },
-			{ title: 'Компания', href: '/settings/company' }
+			{ title: 'Компания', href: '/settings/company' },
+			{ title: 'Закрытие месяцев', href: '/settings/periods' }
 		]
 	}
 ]

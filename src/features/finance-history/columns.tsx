@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { type DataTableFeatures } from '@/lib/data-table-features'
 import { toSchoolTime } from '@/lib/school-time'
 
-import { ACTION_BADGE_VARIANTS, ACTION_LABELS } from './history-filters'
+import { ACTION_BADGE_VARIANTS, getActionLabel } from './history-filters'
 import type { FinanceLogResponse } from '@/api/generated/models'
 
 const columnHelper = createColumnHelper<DataTableFeatures, FinanceLogResponse>()
@@ -43,14 +43,17 @@ export function getColumns(timezone: string) {
 			header: 'Действие',
 			cell: ({ row }) => (
 				<Badge variant={ACTION_BADGE_VARIANTS[row.original.action]}>
-					{ACTION_LABELS[row.original.action]} оплаты
+					{getActionLabel(
+						row.original.action,
+						row.original.entityType
+					)}
 				</Badge>
 			)
 		}),
 		columnHelper.accessor('description', {
 			header: 'Описание',
 			cell: ({ row }) => {
-				const { student } = row.original
+				const { student, teacher } = row.original
 
 				return (
 					<div className='max-w-xl min-w-64 whitespace-normal'>
@@ -61,6 +64,14 @@ export function getColumns(timezone: string) {
 								className='text-muted-foreground text-xs hover:underline'
 							>
 								Профиль ученика
+							</Link>
+						) : null}
+						{teacher ? (
+							<Link
+								href={`/teacher/${teacher.id}`}
+								className='text-muted-foreground text-xs hover:underline'
+							>
+								Профиль преподавателя
 							</Link>
 						) : null}
 					</div>

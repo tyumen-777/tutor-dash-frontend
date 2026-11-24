@@ -3,19 +3,12 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import dayjs from 'dayjs'
 import { ReceiptText } from 'lucide-react'
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import {
-	Combobox,
-	ComboboxContent,
-	ComboboxEmpty,
-	ComboboxInput,
-	ComboboxItem,
-	ComboboxList
-} from '@/components/ui/combobox'
 import {
 	Dialog,
 	DialogContent,
@@ -55,15 +48,16 @@ import {
 } from './expense-form-schema'
 import { categoryOptions, editableStatusOptions } from './expense-options'
 import {
+	CLOSED_PERIOD_MESSAGE,
 	UNKNOWN_ERROR_MESSAGE,
 	getCommonErrorMessage,
 	hasMessage,
+	isClosedPeriodError,
 	parseApiError
 } from '@/api/errors'
 import type { ExpenseResponse } from '@/api/generated/models'
 import { paymentMethodOptions } from '@/features/income/payment-options'
 import { pluralize } from '@/features/main/format'
-import { useTeachers } from '@/features/teachers/api/use-teachers'
 
 type Option = { readonly label: string; readonly value: string }
 
@@ -148,21 +142,6 @@ export function ExpenseFormDialog({
 	}, [open, defaultValues, form])
 
 	const category = useWatch({ control: form.control, name: 'category' })
-	const teachers = useTeachers('active')
-	const teacherOptions = useMemo<Option[]>(() => {
-		const options = (teachers.data?.items ?? []).map(teacher => ({
-			value: teacher.id,
-			label: teacher.fullName
-		}))
-		const current = expense?.teacher
-
-		// Преподаватель мог уйти в архив после выплаты
-		if (current && !options.some(option => option.value === current.id)) {
-			options.push({ value: current.id, label: current.fullName })
-		}
-
-		return options
-	}, [teachers.data, expense])
 
 	function handleOpenChange(nextOpen: boolean) {
 		onOpenChange(nextOpen)
@@ -176,19 +155,14 @@ export function ExpenseFormDialog({
 	function handleError(error: unknown) {
 		const apiError = parseApiError(error)
 
-		if (
-			apiError.status === 400 &&
-			hasMessage(apiError, 'Teacher not found')
-		) {
-			form.setError('teacherId', {
-				message: 'Преподаватель больше недоступен'
-			})
-			return
-		}
 		if (apiError.status === 400 && hasMessage(apiError, 'spentOn')) {
 			form.setError('spentOn', {
 				message: 'Дата не может быть в будущем'
 			})
+			return
+		}
+		if (isClosedPeriodError(apiError)) {
+			setFormError(CLOSED_PERIOD_MESSAGE)
 			return
 		}
 		if (apiError.status === 409 && hasMessage(apiError, 'Payout')) {
@@ -378,91 +352,31 @@ export function ExpenseFormDialog({
 									/>
 
 									{category === 'SALARY' ? (
-										<Controller
-											name='teacherId'
-											control={form.control}
-											render={({ field, fieldState }) => (
-												<Field
-													data-invalid={
-														fieldState.invalid
-													}
-													className='sm:col-span-2'
-												>
-													<FieldLabel
-														htmlFor={field.name}
+										<Field className='sm:col-span-2'>
+											{expense?.teacher ? (
+												<FieldDescription>
+													Преподаватель:{' '}
+													{expense.teacher.fullName}
+												</FieldDescription>
+											) : null}
+											{isPayout ? null : (
+												<FieldDescription>
+													Зарплату преподавателю
+													проводите в разделе{' '}
+													<Link
+														href='/payouts'
+														className='underline underline-offset-4'
 													>
-														Преподаватель
-													</FieldLabel>
-													<Combobox<Option>
-														items={teacherOptions}
-														value={
-															teacherOptions.find(
-																option =>
-																	option.value ===
-																	field.value
-															) ?? null
-														}
-														onValueChange={option =>
-															field.onChange(
-																option?.value ??
-																	''
-															)
-														}
-														itemToStringValue={option =>
-															option.value
-														}
-													>
-														<ComboboxInput
-															id={field.name}
-															placeholder={
-																teachers.isPending
-																	? 'Загрузка…'
-																	: 'Найти преподавателя'
-															}
-															aria-invalid={
-																fieldState.invalid
-															}
-															disabled={isPayout}
-															className='h-10 w-full'
-														/>
-														<ComboboxContent>
-															<ComboboxEmpty>
-																Ничего не
-																найдено
-															</ComboboxEmpty>
-															<ComboboxList>
-																{(
-																	option: Option
-																) => (
-																	<ComboboxItem
-																		key={
-																			option.value
-																		}
-																		value={
-																			option
-																		}
-																	>
-																		{
-																			option.label
-																		}
-																	</ComboboxItem>
-																)}
-															</ComboboxList>
-														</ComboboxContent>
-													</Combobox>
-													<FieldDescription>
-														Необязательно. Выплата
-														появится в отчётах по
-														преподавателю.
-													</FieldDescription>
-													<FieldError
-														errors={[
-															fieldState.error
-														]}
-													/>
-												</Field>
+														Выплаты
+													</Link>
+													: там сумма считается по
+													проведённым занятиям, и их
+													нельзя оплатить дважды.
+													Здесь — зарплата остальных
+													сотрудников.
+												</FieldDescription>
 											)}
-										/>
+										</Field>
 									) : null}
 								</div>
 							</FieldSet>

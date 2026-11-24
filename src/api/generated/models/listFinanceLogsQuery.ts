@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 import type { ListFinanceLogsQueryAction } from './listFinanceLogsQueryAction'
+import type { ListFinanceLogsQueryEntityType } from './listFinanceLogsQueryEntityType'
 
 /**
  * Filters and pagination for the finance operations history.
@@ -23,6 +24,8 @@ export interface ListFinanceLogsQuery {
 	to?: string
 	/** Operation: created, edited or canceled. */
 	action?: ListFinanceLogsQueryAction
+	/** What the operation was made on: a student payment, a teacher payout or closing / reopening a month. */
+	entityType?: ListFinanceLogsQueryEntityType
 	/**
 	 * Only operations related to this student.
 	 * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$

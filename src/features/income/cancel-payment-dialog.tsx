@@ -18,9 +18,11 @@ import { formatMoney } from '@/lib/format-money'
 import { useCancelPayment } from './api/use-payment-mutations'
 import { formatLessons } from './payment-options'
 import {
+	CLOSED_PERIOD_MESSAGE,
 	UNKNOWN_ERROR_MESSAGE,
 	getCommonErrorMessage,
 	hasMessage,
+	isClosedPeriodError,
 	parseApiError
 } from '@/api/errors'
 import type { PaymentResponse } from '@/api/generated/models'
@@ -62,11 +64,14 @@ export function CancelPaymentDialog({
 
 	const errorMessage = !apiError
 		? null
-		: apiError.status === 409 && hasMessage(apiError, 'already been used')
-			? 'Занятия из этого пакета уже списаны, отменить оплату нельзя.'
-			: apiError.status === 409
-				? 'Оплата уже отменена.'
-				: (getCommonErrorMessage(apiError) ?? UNKNOWN_ERROR_MESSAGE)
+		: isClosedPeriodError(apiError)
+			? CLOSED_PERIOD_MESSAGE
+			: apiError.status === 409 &&
+				  hasMessage(apiError, 'already been used')
+				? 'Занятия из этого пакета уже списаны, отменить оплату нельзя.'
+				: apiError.status === 409
+					? 'Оплата уже отменена.'
+					: (getCommonErrorMessage(apiError) ?? UNKNOWN_ERROR_MESSAGE)
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>

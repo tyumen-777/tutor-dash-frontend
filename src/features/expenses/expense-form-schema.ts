@@ -46,8 +46,6 @@ export const expenseFormSchema = z.object({
 			'Не более двух знаков после запятой'
 		),
 	category: z.enum(categories, { error: 'Выберите категорию' }),
-	// Пустая строка — преподаватель не выбран
-	teacherId: z.string(),
 	// Пустая строка — получатель не указан
 	recipient: z
 		.string()
@@ -74,7 +72,6 @@ export function getCreateDefaultValues(): Partial<ExpenseFormValues> {
 		spentOn: dayjs().format('YYYY-MM-DD'),
 		amount: undefined,
 		category: undefined,
-		teacherId: '',
 		recipient: '',
 		method: 'TRANSFER',
 		status: 'PAID',
@@ -90,19 +87,12 @@ export function getEditDefaultValues(
 		spentOn: expense.spentOn,
 		amount: Number(expense.amount),
 		category: expense.category,
-		teacherId: expense.teacher?.id ?? '',
 		recipient: expense.recipient ?? '',
 		method: expense.method,
 		status: expense.status === 'CANCELED' ? undefined : expense.status,
 		description: expense.description,
 		comment: expense.comment ?? ''
 	}
-}
-
-function getTeacherId(values: ExpenseFormValues) {
-	return values.category === 'SALARY' && values.teacherId
-		? values.teacherId
-		: null
 }
 
 export function toCreateExpenseRequest(
@@ -116,8 +106,7 @@ export function toCreateExpenseRequest(
 		method: values.method,
 		status: values.status,
 		description: values.description,
-		comment: values.comment || undefined,
-		teacherId: getTeacherId(values) ?? undefined
+		comment: values.comment || undefined
 	}
 }
 
@@ -132,7 +121,6 @@ export function toUpdateExpenseRequest(
 		method: values.method,
 		status: values.status,
 		description: values.description,
-		comment: values.comment,
-		teacherId: getTeacherId(values)
+		comment: values.comment
 	}
 }

@@ -3,10 +3,13 @@ name: Build and deploy frontend
 on:
   push:
     branches: [main]
+  # В pull request только проверки, без деплоя
+  pull_request:
   workflow_dispatch:
 
+# Деплой main отменяет предыдущий незавершённый; PR проверяются независимо
 concurrency:
-  group: deploy-frontend
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -17,7 +20,32 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  # Типы, линтер и форматирование. Без зелёной проверки образ
+  # не собирается и в прод ничего не уходит
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format
+        run: npx prettier --check src
+
   build-and-deploy:
+    needs: check
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

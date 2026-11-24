@@ -12,9 +12,9 @@ import type { UpdatePaymentRequestMethod } from './updatePaymentRequestMethod'
  */
 export interface UpdatePaymentRequest {
 	/**
-	 * Amount in the organization currency. Zero is allowed for free / bonus packages.
-	 * @minimum 0
+	 * Amount in the organization currency; must be greater than zero.
 	 * @maximum 9999999999.99
+	 * @exclusiveMinimum 0
 	 */
 	amount?: number
 	/**
