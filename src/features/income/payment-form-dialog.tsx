@@ -1,7 +1,6 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import dayjs from 'dayjs'
 import { Wallet } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
@@ -43,6 +42,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 
 import { formatMoney } from '@/lib/format-money'
+import { schoolNow } from '@/lib/school-time'
 
 import { useCreatePayment, useUpdatePayment } from './api/use-payment-mutations'
 import { usePayments } from './api/use-payments'
@@ -66,6 +66,7 @@ import {
 	parseApiError
 } from '@/api/errors'
 import type { PaymentResponse } from '@/api/generated/models'
+import { useSchoolTimezone } from '@/features/auth/api/use-organization-role'
 import { useStudents } from '@/features/students/api/use-students'
 import { getStudentFullName } from '@/features/students/format'
 import { formatDate } from '@/features/teachers/format'
@@ -110,6 +111,12 @@ export function PaymentFormDialog({
 	studentId?: string
 }) {
 	const isEdit = !!payment
+	const timezone = useSchoolTimezone()
+	const today = schoolNow(timezone).format('YYYY-MM-DD')
+	// Прошлые месяцы закрыты: при правке дату можно двигать только внутри
+	// текущего месяца, а оплату из закрытого месяца — не переносить вовсе
+	const monthStart = `${today.slice(0, 7)}-01`
+	const dateLocked = isEdit && payment.paidOn < monthStart
 	const defaultValues = useMemo(
 		() =>
 			payment
@@ -212,6 +219,12 @@ export function PaymentFormDialog({
 		if (apiError.status === 409 && hasMessage(apiError, 'used lessons')) {
 			form.setError('lessonsCount', {
 				message: 'Нельзя меньше, чем уже списано занятий'
+			})
+			return
+		}
+		if (apiError.status === 409 && hasMessage(apiError, 'closed month')) {
+			form.setError('paidOn', {
+				message: 'Нельзя переносить оплату в прошлый месяц или из него'
 			})
 			return
 		}
@@ -464,14 +477,24 @@ export function PaymentFormDialog({
 												{...field}
 												id={field.name}
 												type='date'
-												max={dayjs().format(
-													'YYYY-MM-DD'
-												)}
+												max={today}
+												min={
+													isEdit
+														? monthStart
+														: undefined
+												}
+												disabled={dateLocked}
 												aria-invalid={
 													fieldState.invalid
 												}
 												className='h-10'
 											/>
+											{dateLocked ? (
+												<FieldDescription>
+													Месяц закрыт — дату изменить
+													нельзя
+												</FieldDescription>
+											) : null}
 											<FieldError
 												errors={[fieldState.error]}
 											/>

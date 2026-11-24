@@ -77,7 +77,8 @@ const navigation: (NavigationLink | NavigationGroup)[] = [
 		children: [
 			{ title: 'Расходы', href: '/expenses' },
 			{ title: 'Поступления', href: '/income' },
-			{ title: 'Выплаты', href: '/payouts' }
+			{ title: 'Выплаты', href: '/payouts' },
+			{ title: 'История операций', href: '/history' }
 		]
 	},
 	{ title: 'Расписание', href: '/calendar', icon: CalendarDays },
