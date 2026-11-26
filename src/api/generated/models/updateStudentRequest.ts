@@ -59,7 +59,7 @@ export interface UpdateStudentRequest {
 	 * @nullable
 	 */
 	timezone?: string | null
-	/** LEAD or ACTIVE; only a lead or an active student can be switched. */
+	/** LEAD, ACTIVE or PAUSED. An archived student is returned via POST /students/:id/restore. */
 	status?: UpdateStudentRequestStatus
 	/**
 	 * Free-form note.

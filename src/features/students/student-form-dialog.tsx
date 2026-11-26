@@ -50,8 +50,9 @@ import { useCreateStudent } from './api/use-create-student'
 import { useUpdateStudent } from './api/use-update-student'
 import {
 	type StudentFormValues,
+	createStatusOptions,
+	editStatusOptions,
 	hasEditableStatus,
-	statusOptions,
 	studentFormSchema,
 	toCreateStudentRequest,
 	toStudentFormValues,
@@ -137,6 +138,7 @@ export function StudentFormDialog({
 	const studyLevels = useStudyLevels()
 	const [formError, setFormError] = useState<string | null>(null)
 	const canEditStatus = !student || hasEditableStatus(student)
+	const statusOptions = isEdit ? editStatusOptions : createStatusOptions
 
 	// Форма редактирования заполняется актуальными данными при каждом открытии
 	useEffect(() => {

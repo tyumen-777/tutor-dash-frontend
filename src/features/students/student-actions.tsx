@@ -1,6 +1,6 @@
 'use client'
 
-import { MoreHorizontal } from 'lucide-react'
+import { Archive, ArchiveRestore, MoreHorizontal } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 
@@ -14,13 +14,18 @@ import {
 	DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 
+import { ArchiveStudentDialog } from './archive-student-dialog'
 import { StudentFormDialog } from './student-form-dialog'
+import { useRestoreStudentAction } from './use-restore-student-action'
 import type { StudentResponse } from '@/api/generated/models'
 import { useCanManageStudents } from '@/features/auth/api/use-organization-role'
 
 export function StudentActions({ student }: { student: StudentResponse }) {
 	const canManage = useCanManageStudents()
 	const [editOpen, setEditOpen] = useState(false)
+	const [archiveOpen, setArchiveOpen] = useState(false)
+	const { restore, isPending: isRestoring } = useRestoreStudentAction()
+	const isArchived = student.status === 'ARCHIVED'
 
 	return (
 		<>
@@ -52,15 +57,42 @@ export function StudentActions({ student }: { student: StudentResponse }) {
 						</DropdownMenuItem>
 					) : null}
 					<DropdownMenuItem>Запланировать занятие</DropdownMenuItem>
+					{canManage ? (
+						<>
+							<DropdownMenuSeparator />
+							{isArchived ? (
+								<DropdownMenuItem
+									disabled={isRestoring}
+									onClick={() => restore(student.id)}
+								>
+									<ArchiveRestore />
+									Восстановить
+								</DropdownMenuItem>
+							) : (
+								<DropdownMenuItem
+									onClick={() => setArchiveOpen(true)}
+								>
+									<Archive />В архив
+								</DropdownMenuItem>
+							)}
+						</>
+					) : null}
 				</DropdownMenuContent>
 			</DropdownMenu>
 
 			{canManage ? (
-				<StudentFormDialog
-					student={student}
-					open={editOpen}
-					onOpenChange={setEditOpen}
-				/>
+				<>
+					<StudentFormDialog
+						student={student}
+						open={editOpen}
+						onOpenChange={setEditOpen}
+					/>
+					<ArchiveStudentDialog
+						student={student}
+						open={archiveOpen}
+						onOpenChange={setArchiveOpen}
+					/>
+				</>
 			) : null}
 		</>
 	)

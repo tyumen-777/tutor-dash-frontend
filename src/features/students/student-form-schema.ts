@@ -5,12 +5,22 @@ import {
 	type CreateStudentRequest,
 	CreateStudentRequestStatus,
 	type StudentResponse,
-	type UpdateStudentRequest
+	type UpdateStudentRequest,
+	UpdateStudentRequestStatus
 } from '@/api/generated/models'
 
-export const statusOptions = [
-	{ label: 'Активный', value: CreateStudentRequestStatus.ACTIVE },
-	{ label: 'Лид (пробное занятие)', value: CreateStudentRequestStatus.LEAD }
+// Новый ученик — активный или лид; на паузу ставят уже существующего
+export const createStatusOptions = [
+	{ label: 'Активный', value: UpdateStudentRequestStatus.ACTIVE },
+	{ label: 'Лид (пробное занятие)', value: UpdateStudentRequestStatus.LEAD }
+] as const
+
+export const editStatusOptions = [
+	...createStatusOptions,
+	{
+		label: 'На паузе (каникулы, перерыв)',
+		value: UpdateStudentRequestStatus.PAUSED
+	}
 ] as const
 
 const optionalPhoneSchema = z
@@ -65,7 +75,7 @@ export const studentFormSchema = z.object({
 		.max(100, 'Не более 100 символов'),
 	lastName: z.string().trim().max(100, 'Не более 100 символов'),
 	birthDate: optionalBirthDateSchema,
-	status: z.enum(CreateStudentRequestStatus, {
+	status: z.enum(UpdateStudentRequestStatus, {
 		error: 'Выберите статус'
 	}),
 	// '' — без преподавателя
@@ -93,7 +103,11 @@ export function toCreateStudentRequest(
 		firstName: values.firstName,
 		lastName: emptyToUndefined(values.lastName),
 		birthDate: emptyToUndefined(values.birthDate),
-		status: values.status,
+		// Пауза в форме создания не предлагается
+		status:
+			values.status === UpdateStudentRequestStatus.PAUSED
+				? CreateStudentRequestStatus.ACTIVE
+				: values.status,
 		teacherId: emptyToUndefined(values.teacherId),
 		levelId: emptyToUndefined(values.levelId),
 		timezone: emptyToUndefined(values.timezone),
@@ -105,14 +119,13 @@ export function toCreateStudentRequest(
 }
 
 /**
- * Only a lead or an active student can be switched in the form; pausing and
- * archiving are separate actions.
+ * Lead, active and paused are switched in the form; an archived student is
+ * returned with the separate restore action.
  */
-export function hasEditableStatus(student: StudentResponse) {
-	return (
-		student.status === CreateStudentRequestStatus.LEAD ||
-		student.status === CreateStudentRequestStatus.ACTIVE
-	)
+export function hasEditableStatus(
+	student: StudentResponse
+): student is StudentResponse & { status: UpdateStudentRequestStatus } {
+	return student.status !== 'ARCHIVED'
 }
 
 export function toStudentFormValues(
@@ -123,8 +136,8 @@ export function toStudentFormValues(
 		lastName: student.lastName ?? '',
 		birthDate: student.birthDate ?? '',
 		status: hasEditableStatus(student)
-			? (student.status as CreateStudentRequestStatus)
-			: CreateStudentRequestStatus.ACTIVE,
+			? student.status
+			: UpdateStudentRequestStatus.ACTIVE,
 		teacherId: student.teacher?.id ?? '',
 		levelId: student.level?.id ?? '',
 		timezone: student.timezone ?? '',

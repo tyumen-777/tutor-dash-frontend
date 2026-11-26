@@ -476,7 +476,7 @@ export function useStudentsControllerGetStudent<
 }
 
 /**
- * Меняет данные ученика: имя, фамилию, контакты, преподавателя, уровень, дату рождения, часовой пояс, статус (лид или активный) и заметку. Пустая строка или null очищает необязательное поле.
+ * Меняет данные ученика: имя, фамилию, контакты, преподавателя, уровень, дату рождения, часовой пояс, статус (лид, активный или пауза) и заметку. Пустая строка или null очищает необязательное поле.
  * @summary Изменение ученика
  */
 export const studentsControllerUpdateStudent = (
@@ -846,4 +846,187 @@ export function useStudentsControllerGetStudentBalance<
 	> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 	return withQueryKey(query, queryOptions.queryKey)
+}
+
+/**
+ * Ученик закончил обучение: история занятий и оплат остаётся, будущие запланированные занятия отменяются, шаблоны расписания закрываются. Остаток оплаченных занятий сохраняется. Архивному ученику нельзя внести занятие или оплату.
+ * @summary Перевод ученика в архив
+ */
+export const studentsControllerArchiveStudent = (
+	id: string,
+	options?: SecondParameter<typeof apiRequest>,
+	signal?: AbortSignal
+) => {
+	return apiRequest<StudentResponse>(
+		{ url: `/students/${id}/archive`, method: 'POST', signal },
+		options
+	)
+}
+
+export const getStudentsControllerArchiveStudentMutationKey = () =>
+	['studentsControllerArchiveStudent'] as const
+
+export const getStudentsControllerArchiveStudentMutationOptions = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(options?: {
+	mutation?: UseMutationOptions<
+		Awaited<ReturnType<typeof studentsControllerArchiveStudent>>,
+		TError,
+		StudentsControllerArchiveStudentMutationVariables,
+		TContext
+	>
+	request?: SecondParameter<typeof apiRequest>
+}): UseMutationOptions<
+	Awaited<ReturnType<typeof studentsControllerArchiveStudent>>,
+	TError,
+	StudentsControllerArchiveStudentMutationVariables,
+	TContext
+> => {
+	const mutationKey = getStudentsControllerArchiveStudentMutationKey()
+	const { mutation: mutationOptions, request: requestOptions } = options
+		? options.mutation &&
+			'mutationKey' in options.mutation &&
+			options.mutation.mutationKey
+			? options
+			: { ...options, mutation: { ...options.mutation, mutationKey } }
+		: { mutation: { mutationKey }, request: undefined }
+
+	const mutationFn: MutationFunction<
+		Awaited<ReturnType<typeof studentsControllerArchiveStudent>>,
+		StudentsControllerArchiveStudentMutationVariables
+	> = props => {
+		const { id } = props ?? {}
+
+		return studentsControllerArchiveStudent(id, requestOptions)
+	}
+
+	return { mutationFn, ...mutationOptions }
+}
+
+export type StudentsControllerArchiveStudentMutationResult = NonNullable<
+	Awaited<ReturnType<typeof studentsControllerArchiveStudent>>
+>
+
+export type StudentsControllerArchiveStudentMutationError = ErrorType<void>
+export type StudentsControllerArchiveStudentMutationVariables = { id: string }
+
+/**
+ * @summary Перевод ученика в архив
+ */
+export const useStudentsControllerArchiveStudent = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(
+	options?: {
+		mutation?: UseMutationOptions<
+			Awaited<ReturnType<typeof studentsControllerArchiveStudent>>,
+			TError,
+			StudentsControllerArchiveStudentMutationVariables,
+			TContext
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseMutationResult<
+	Awaited<ReturnType<typeof studentsControllerArchiveStudent>>,
+	TError,
+	StudentsControllerArchiveStudentMutationVariables,
+	TContext
+> => {
+	return useMutation(
+		getStudentsControllerArchiveStudentMutationOptions(options),
+		queryClient
+	)
+}
+/**
+ * Возвращает ученика из архива в статус «активный» вместе с историей и остатком занятий. Расписание нужно составить заново.
+ * @summary Восстановление ученика из архива
+ */
+export const studentsControllerRestoreStudent = (
+	id: string,
+	options?: SecondParameter<typeof apiRequest>,
+	signal?: AbortSignal
+) => {
+	return apiRequest<StudentResponse>(
+		{ url: `/students/${id}/restore`, method: 'POST', signal },
+		options
+	)
+}
+
+export const getStudentsControllerRestoreStudentMutationKey = () =>
+	['studentsControllerRestoreStudent'] as const
+
+export const getStudentsControllerRestoreStudentMutationOptions = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(options?: {
+	mutation?: UseMutationOptions<
+		Awaited<ReturnType<typeof studentsControllerRestoreStudent>>,
+		TError,
+		StudentsControllerRestoreStudentMutationVariables,
+		TContext
+	>
+	request?: SecondParameter<typeof apiRequest>
+}): UseMutationOptions<
+	Awaited<ReturnType<typeof studentsControllerRestoreStudent>>,
+	TError,
+	StudentsControllerRestoreStudentMutationVariables,
+	TContext
+> => {
+	const mutationKey = getStudentsControllerRestoreStudentMutationKey()
+	const { mutation: mutationOptions, request: requestOptions } = options
+		? options.mutation &&
+			'mutationKey' in options.mutation &&
+			options.mutation.mutationKey
+			? options
+			: { ...options, mutation: { ...options.mutation, mutationKey } }
+		: { mutation: { mutationKey }, request: undefined }
+
+	const mutationFn: MutationFunction<
+		Awaited<ReturnType<typeof studentsControllerRestoreStudent>>,
+		StudentsControllerRestoreStudentMutationVariables
+	> = props => {
+		const { id } = props ?? {}
+
+		return studentsControllerRestoreStudent(id, requestOptions)
+	}
+
+	return { mutationFn, ...mutationOptions }
+}
+
+export type StudentsControllerRestoreStudentMutationResult = NonNullable<
+	Awaited<ReturnType<typeof studentsControllerRestoreStudent>>
+>
+
+export type StudentsControllerRestoreStudentMutationError = ErrorType<void>
+export type StudentsControllerRestoreStudentMutationVariables = { id: string }
+
+/**
+ * @summary Восстановление ученика из архива
+ */
+export const useStudentsControllerRestoreStudent = <
+	TError = ErrorType<void>,
+	TContext = unknown
+>(
+	options?: {
+		mutation?: UseMutationOptions<
+			Awaited<ReturnType<typeof studentsControllerRestoreStudent>>,
+			TError,
+			StudentsControllerRestoreStudentMutationVariables,
+			TContext
+		>
+		request?: SecondParameter<typeof apiRequest>
+	},
+	queryClient?: QueryClient
+): UseMutationResult<
+	Awaited<ReturnType<typeof studentsControllerRestoreStudent>>,
+	TError,
+	StudentsControllerRestoreStudentMutationVariables,
+	TContext
+> => {
+	return useMutation(
+		getStudentsControllerRestoreStudentMutationOptions(options),
+		queryClient
+	)
 }

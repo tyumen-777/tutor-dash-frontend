@@ -9,11 +9,18 @@ import {
 // orval не генерирует query-параметры для этого эндпоинта, поэтому они
 // передаются через axios. Бэкенд отдаёт не больше 100 записей за раз —
 // таблица фильтрует и листает на клиенте.
-export function useStudents() {
-	const params: ListStudentsQuery = { limit: 100 }
+// Без вкладки — все, кроме архивных (как и по умолчанию на бэкенде)
+export function useStudents(tab: 'current' | 'archived' = 'current') {
+	const params: ListStudentsQuery = {
+		limit: 100,
+		status: tab === 'archived' ? 'ARCHIVED' : undefined
+	}
 
 	return useStudentsControllerListStudents({
-		query: { queryKey: getStudentsControllerListStudentsQueryKey() },
+		query: {
+			// Префикс общий: инвалидация списка обновляет обе вкладки
+			queryKey: [...getStudentsControllerListStudentsQueryKey(), tab]
+		},
 		request: { params }
 	})
 }

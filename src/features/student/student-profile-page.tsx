@@ -1,6 +1,8 @@
 'use client'
 
 import {
+	Archive,
+	ArchiveRestore,
 	ArrowLeft,
 	CalendarClock,
 	CheckCircle2,
@@ -43,6 +45,7 @@ import type { StudentPreferredTime } from './types'
 import type { StudentResponse } from '@/api/generated/models'
 import {
 	useCanManageFinance,
+	useCanManageStudents,
 	useIsTeacherOnly,
 	useSchoolTimezone
 } from '@/features/auth/api/use-organization-role'
@@ -62,6 +65,7 @@ import {
 	LESSON_STATUS_BADGE_VARIANTS,
 	LESSON_STATUS_LABELS
 } from '@/features/lessons/lesson-options'
+import { ArchiveStudentDialog } from '@/features/students/archive-student-dialog'
 import {
 	STUDENT_STATUS_BADGE_VARIANTS,
 	STUDENT_STATUS_LABELS,
@@ -70,6 +74,7 @@ import {
 	getStudentFullName
 } from '@/features/students/format'
 import { TIMEZONE_OPTIONS } from '@/features/students/timezones'
+import { useRestoreStudentAction } from '@/features/students/use-restore-student-action'
 import { formatStudyLevel } from '@/features/study-levels/format'
 import { formatDate } from '@/features/teachers/format'
 
@@ -198,6 +203,7 @@ function ProfileHeader({ student }: { student: StudentResponse }) {
 								{STUDENT_STATUS_LABELS[student.status]}
 							</Badge>
 							<Badge variant='outline'>ID: {student.id}</Badge>
+							<StatusAction student={student} />
 						</div>
 						<p className='mt-4 max-w-2xl text-sm leading-6 text-[#3D453D]'>
 							Профиль собран как рабочая карточка преподавателя:
@@ -214,6 +220,47 @@ function ProfileHeader({ student }: { student: StudentResponse }) {
 				</div>
 			</div>
 		</section>
+	)
+}
+
+function StatusAction({ student }: { student: StudentResponse }) {
+	const canManage = useCanManageStudents()
+	const [archiveOpen, setArchiveOpen] = useState(false)
+	const { restore, isPending: isRestoring } = useRestoreStudentAction()
+
+	if (!canManage) return null
+
+	if (student.status === 'ARCHIVED') {
+		return (
+			<Button
+				variant='outline'
+				size='sm'
+				className='ml-auto'
+				disabled={isRestoring}
+				onClick={() => restore(student.id)}
+			>
+				<ArchiveRestore data-icon='inline-start' />
+				Восстановить
+			</Button>
+		)
+	}
+
+	return (
+		<>
+			<Button
+				variant='outline'
+				size='sm'
+				className='ml-auto'
+				onClick={() => setArchiveOpen(true)}
+			>
+				<Archive data-icon='inline-start' />В архив
+			</Button>
+			<ArchiveStudentDialog
+				student={student}
+				open={archiveOpen}
+				onOpenChange={setArchiveOpen}
+			/>
+		</>
 	)
 }
 
@@ -408,8 +455,15 @@ function Lessons({ studentId }: { studentId: string }) {
 	)
 }
 
-function Payments({ studentId }: { studentId: string }) {
-	const canManage = useCanManageFinance()
+function Payments({
+	studentId,
+	isArchived
+}: {
+	studentId: string
+	isArchived: boolean
+}) {
+	// Архивному ученику оплату не внести: сначала его нужно восстановить
+	const canManage = useCanManageFinance() && !isArchived
 	const [dialogOpen, setDialogOpen] = useState(false)
 	const { data: balance } = useStudentBalance(studentId)
 	const { data, isPending, isError } = usePayments({ studentId, limit: 20 })
@@ -689,7 +743,12 @@ function StudentProfileContent({ studentId }: StudentProfilePageProps) {
 					<Contacts student={student} />
 					<Lessons studentId={student.id} />
 					{/* Платежи — финансы школы, преподавателю они не показываются */}
-					{isTeacherOnly ? null : <Payments studentId={student.id} />}
+					{isTeacherOnly ? null : (
+						<Payments
+							studentId={student.id}
+							isArchived={student.status === 'ARCHIVED'}
+						/>
+					)}
 				</div>
 				<div className='grid min-w-0 content-start gap-4'>
 					<Notes student={student} />

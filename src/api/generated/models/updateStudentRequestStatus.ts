@@ -7,12 +7,13 @@
  */
 
 /**
- * LEAD or ACTIVE; only a lead or an active student can be switched.
+ * LEAD, ACTIVE or PAUSED. An archived student is returned via POST /students/:id/restore.
  */
 export type UpdateStudentRequestStatus =
 	(typeof UpdateStudentRequestStatus)[keyof typeof UpdateStudentRequestStatus]
 
 export const UpdateStudentRequestStatus = {
 	LEAD: 'LEAD',
-	ACTIVE: 'ACTIVE'
+	ACTIVE: 'ACTIVE',
+	PAUSED: 'PAUSED'
 } as const
