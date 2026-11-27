@@ -37,6 +37,7 @@ import {
 	useOrganizationSettings,
 	useUpdateOrganization
 } from './api/use-organization-settings'
+import { LowBalanceNotifyCard } from './low-balance-notify-card'
 import {
 	type OrganizationFormValues,
 	organizationFormSchema,
@@ -275,7 +276,7 @@ export default function SettingsPage() {
 			<div className='space-y-1'>
 				<h1 className='text-2xl font-semibold'>Школа</h1>
 				<p className='text-muted-foreground text-sm'>
-					Название, часовой пояс и валюта школы.
+					Название, часовой пояс, валюта и уведомления школы.
 				</p>
 			</div>
 
@@ -315,6 +316,15 @@ export default function SettingsPage() {
 					</CardContent>
 				)}
 			</Card>
+
+			{settings ? (
+				<LowBalanceNotifyCard
+					// Сбрасываем черновик после сохранения
+					key={`${settings.lowBalanceNotifyAt}-${settings.notifyLessonCompleted}`}
+					settings={settings}
+					canManage={canManage}
+				/>
+			) : null}
 		</div>
 	)
 }

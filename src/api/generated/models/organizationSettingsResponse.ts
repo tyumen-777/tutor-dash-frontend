@@ -20,4 +20,13 @@ export interface OrganizationSettingsResponse {
 	timezone: string
 	/** ISO 4217 currency code of the school. */
 	currency: string
+	/**
+	 * Paid lessons left at which the student gets a Telegram notification; null = off.
+	 * @minimum -9007199254740991
+	 * @maximum 9007199254740991
+	 * @nullable
+	 */
+	lowBalanceNotifyAt: number | null
+	/** Whether the student gets a Telegram message after each held lesson. */
+	notifyLessonCompleted: boolean
 }

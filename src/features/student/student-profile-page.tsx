@@ -41,6 +41,7 @@ import { formatMoney } from '@/lib/format-money'
 import { toSchoolTime } from '@/lib/school-time'
 
 import { useStudent } from './api/use-student'
+import { StudentTelegramCard } from './student-telegram-card'
 import type { StudentPreferredTime } from './types'
 import type { StudentResponse } from '@/api/generated/models'
 import {
@@ -715,6 +716,7 @@ function ProfileSkeleton() {
 function StudentProfileContent({ studentId }: StudentProfilePageProps) {
 	const { data: student, isPending, error } = useStudent(studentId)
 	const isTeacherOnly = useIsTeacherOnly()
+	const canManageStudents = useCanManageStudents()
 
 	if (isPending) {
 		return <ProfileSkeleton />
@@ -752,6 +754,9 @@ function StudentProfileContent({ studentId }: StudentProfilePageProps) {
 				</div>
 				<div className='grid min-w-0 content-start gap-4'>
 					<Notes student={student} />
+					{canManageStudents ? (
+						<StudentTelegramCard student={student} />
+					) : null}
 					<PreferredTime />
 				</div>
 			</div>

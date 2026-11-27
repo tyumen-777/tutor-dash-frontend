@@ -18,4 +18,13 @@ export interface UpdateOrganizationRequest {
 	name?: string
 	/** IANA timezone of the school: day boundaries for lessons and monthly totals. */
 	timezone?: string
+	/**
+	 * Notify the student in Telegram when this many paid lessons are left; null turns the notification off.
+	 * @minimum 0
+	 * @maximum 20
+	 * @nullable
+	 */
+	lowBalanceNotifyAt?: number | null
+	/** Send the student a Telegram message after each held lesson with the lessons left. */
+	notifyLessonCompleted?: boolean
 }

@@ -222,7 +222,7 @@ export function useOrganizationControllerGetOrganization<
 }
 
 /**
- * Меняет название и часовой пояс активной организации. Валюта и slug не меняются: валюта записана в каждой оплате и расходе.
+ * Меняет название, часовой пояс и порог Telegram-уведомления о низком остатке занятий. Валюта и slug не меняются: валюта записана в каждой оплате и расходе.
  * @summary Изменение реквизитов школы
  */
 export const organizationControllerUpdateOrganization = (
